@@ -15,9 +15,17 @@ public class PlayerController : MonoBehaviour
     public bool canBeMoved = true;
     public float healthMax { get; private set; }
 
-    [Header("Configuration")]
+    [Header("Movement")]
     [SerializeField] private float moveSpeed = 2.5f;
 
+    [Header("Shooting")]
+    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private float bulletSpeed = 10f;
+    [SerializeField] private float shootingTimeMax = 0.3f; // Time between shots
+    [SerializeField] private Vector2 gunOffset = new Vector2(0.75f, -0.2f); // Spawn position relative to player
+
+    private float shootingTime = 0f;
+    private bool isShooting = false;
     private Rigidbody2D rb2;
 
     void Awake()
@@ -28,6 +36,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb2 = GetComponent<Rigidbody2D>();
+        shootingTime = 0f;
         healthMax = health;
     }
 
@@ -36,6 +45,7 @@ public class PlayerController : MonoBehaviour
         if (canBeMoved)
         {
             MovementController();
+            ShootController();
         }
     }
 
@@ -47,7 +57,7 @@ public class PlayerController : MonoBehaviour
         velocity.x = x * moveSpeed;
         rb2.linearVelocity = velocity;
 
-        // Flip sprite based on movement direction
+        // Flip sprite based on direction
         if (velocity.x < 0)
         {
             graphic.flipX = true;
@@ -55,6 +65,41 @@ public class PlayerController : MonoBehaviour
         else if (velocity.x > 0)
         {
             graphic.flipX = false;
+        }
+    }
+
+    void ShootController()
+    {
+        // Press or hold Z to shoot
+        isShooting = Input.GetKey(KeyCode.Z);
+
+        shootingTime -= Time.deltaTime;
+
+        if (isShooting && shootingTime <= 0)
+        {
+            shootingTime = shootingTimeMax;
+            Shoot();
+        }
+    }
+
+    void Shoot()
+    {
+        // 1 = facing right, -1 = facing left
+        int direction = graphic.flipX ? -1 : 1;
+
+        // Calculate gun spawn point based on player face direction
+        Vector2 gunPos = new Vector2(
+            transform.position.x + (gunOffset.x * direction),
+            transform.position.y + gunOffset.y
+        );
+
+        // Spawn bullet
+        GameObject bulletObj = Instantiate(bulletPrefab, gunPos, Quaternion.identity);
+        Bullet bullet = bulletObj.GetComponent<Bullet>();
+
+        if (bullet != null)
+        {
+            bullet.Launch(new Vector2(direction, 0), "Enemy", bulletSpeed, attack);
         }
     }
 }
