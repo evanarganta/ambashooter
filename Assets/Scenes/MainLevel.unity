@@ -163,6 +163,7 @@ GameObject:
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
+  - component: {fileID: 519420033}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -232,7 +233,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.47036314, g: 0.5442575, b: 0.6603774, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -288,6 +289,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &519420033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4f38b95c3e1b4b45a5ea7dbb6604976, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
+  isFollowing: 1
+  target: {fileID: 1355870470}
+  targetOffset: {x: 0, y: 1, z: -10}
+  followRatio: 1
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -392,6 +409,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &1355870470 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3312185949991157249, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
+  m_PrefabInstance: {fileID: 6619227380446574211}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1850817685
 GameObject:
   m_ObjectHideFlags: 0
@@ -403,7 +425,7 @@ GameObject:
   - component: {fileID: 1850817686}
   - component: {fileID: 1850817688}
   - component: {fileID: 1850817687}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -539,6 +561,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 959645560838903004, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
+      propertyPath: jumpForce
+      value: 5.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 959645560838903004, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
+      propertyPath: gunOffset.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 959645560838903004, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
+      propertyPath: gunOffset.y
+      value: 0.075
+      objectReference: {fileID: 0}
+    - target: {fileID: 959645560838903004, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
+      propertyPath: bulletPrefab
+      value: 
+      objectReference: {fileID: 8579669333912622622, guid: 8800ad61f940e1049bdc6992726fafa1, type: 3}
     - target: {fileID: 3312185949991157249, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
