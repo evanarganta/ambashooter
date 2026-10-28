@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
@@ -11,6 +9,7 @@ public class EnemyController : MonoBehaviour
 
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2.5f;
+    private bool isDead;
 
     void Update()
     {
@@ -25,6 +24,11 @@ public class EnemyController : MonoBehaviour
 
     public void DamagedBy(float damage)
     {
+        if (isDead)
+        {
+            return;
+        }
+
         health -= damage;
         if (health <= 0)
         {
@@ -44,6 +48,13 @@ public class EnemyController : MonoBehaviour
 
     void Die()
     {
+        if (isDead)
+        {
+            return;
+        }
+
+        isDead = true;
+        ScoreManager.DefeatEnemy();
         Destroy(gameObject);
     }
 

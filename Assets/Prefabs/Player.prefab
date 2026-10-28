@@ -104,6 +104,7 @@ GameObject:
   - component: {fileID: 959645560838903004}
   - component: {fileID: 579525517250885461}
   - component: {fileID: 3860100173704516978}
+  - component: {fileID: 2501371093460702163}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -140,13 +141,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   graphic: {fileID: 7418637427390907298}
+  animator: {fileID: 2501371093460702163}
   health: 100
   attack: 5
   canBeMoved: 1
   moveSpeed: 2.5
   jumpForce: 7
   minGroundDistance: 1.2
-  bulletPrefab: {fileID: 0}
+  bulletPrefab: {fileID: 8579669333912622622, guid: 8800ad61f940e1049bdc6992726fafa1, type: 3}
   bulletSpeed: 10
   shootingTimeMax: 0.3
   gunOffset: {x: 0.75, y: -0.2}
@@ -214,3 +216,25 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0}
   m_Size: {x: 0.8, y: 1}
   m_Direction: 0
+--- !u!95 &2501371093460702163
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7406484780227809459}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 3ccbf148e974fac47ac4e6c6bdfa2bd7, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

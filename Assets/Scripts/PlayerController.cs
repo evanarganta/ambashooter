@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -8,6 +6,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Properties")]
     [SerializeField] private SpriteRenderer graphic;
+    [SerializeField] private Animator animator;
 
     [Header("Status")]
     public float health = 100f;
@@ -29,6 +28,7 @@ public class PlayerController : MonoBehaviour
     private float shootingTime = 0f;
     private bool isShooting = false;
     private bool isGrounded = true;
+    private bool isDead;
     private Rigidbody2D rb2;
 
     void Awake()
@@ -36,9 +36,22 @@ public class PlayerController : MonoBehaviour
         Instance = this;
     }
 
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
     void Start()
     {
         rb2 = GetComponent<Rigidbody2D>();
+        if (animator == null)
+        {
+            animator = GetComponent<Animator>();
+        }
+
         healthMax = health;
     }
 
@@ -50,6 +63,9 @@ public class PlayerController : MonoBehaviour
             JumpController();
             ShootController();
         }
+
+        FallDie();
+        AnimationController();
     }
 
     void MovementController()
@@ -98,6 +114,21 @@ public class PlayerController : MonoBehaviour
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 
+    void AnimationController()
+    {
+        if (animator == null || rb2 == null)
+        {
+            return;
+        }
+
+        int velocityX = rb2.linearVelocity.x > 0f ? 1 : rb2.linearVelocity.x < 0f ? -1 : 0;
+        int velocityY = rb2.linearVelocity.y > 0f ? 1 : rb2.linearVelocity.y < 0f ? -1 : 0;
+
+        animator.SetBool("isGrounded", isGrounded);
+        animator.SetInteger("velocityX", velocityX);
+        animator.SetInteger("velocityY", velocityY);
+    }
+
     void ShootController()
     {
         isShooting = Input.GetKey(KeyCode.Z);
@@ -129,10 +160,54 @@ public class PlayerController : MonoBehaviour
 
     public void DamagedBy(float damage)
     {
+        if (isDead)
+        {
+            return;
+        }
+
         health = Mathf.Max(0f, health - damage);
         if (health <= 0f)
         {
-            canBeMoved = false;
+            Die();
+        }
+    }
+
+    void FallDie()
+    {
+        if (transform.position.y < -20f)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        if (isDead)
+        {
+            return;
+        }
+
+        isDead = true;
+        if (graphic != null)
+        {
+            graphic.enabled = false;
+        }
+
+        canBeMoved = false;
+        if (rb2 != null)
+        {
+            rb2.linearVelocity = Vector2.zero;
+        }
+
+        GameManager.GameOver();
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        EnemyController enemy = collision.collider.GetComponentInParent<EnemyController>();
+        if (enemy != null)
+        {
+            DamagedBy(enemy.GetAttackDamage());
         }
     }
 
