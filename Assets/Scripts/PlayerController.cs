@@ -126,4 +126,27 @@ public class PlayerController : MonoBehaviour
             bullet.Launch(new Vector2(direction, 0), "Enemy", bulletSpeed, attack);
         }
     }
+
+    public void DamagedBy(float damage)
+    {
+        health = Mathf.Max(0f, health - damage);
+        if (health <= 0f)
+        {
+            canBeMoved = false;
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (!collision.CompareTag("Bullet"))
+        {
+            return;
+        }
+
+        Bullet bullet = collision.GetComponent<Bullet>();
+        if (bullet != null)
+        {
+            bullet.TryHitTarget(collision);
+        }
+    }
 }

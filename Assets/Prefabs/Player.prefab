@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5676220037797449699}
   - component: {fileID: 7418637427390907298}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Graphic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -104,9 +104,9 @@ GameObject:
   - component: {fileID: 959645560838903004}
   - component: {fileID: 579525517250885461}
   - component: {fileID: 3860100173704516978}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -144,6 +144,12 @@ MonoBehaviour:
   attack: 5
   canBeMoved: 1
   moveSpeed: 2.5
+  jumpForce: 7
+  minGroundDistance: 1.2
+  bulletPrefab: {fileID: 0}
+  bulletSpeed: 10
+  shootingTimeMax: 0.3
+  gunOffset: {x: 0.75, y: -0.2}
 --- !u!50 &579525517250885461
 Rigidbody2D:
   serializedVersion: 5
