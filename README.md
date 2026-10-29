@@ -1,8 +1,4 @@
-# Ambashooter
-
-2D retro action platformer where you run, jump, and shoot your way through hostile mushroom enemies across multiple stages.
-
-**Kelompok 3:**
+**Presented by Kelompok 3 of XI RPL 1:**
 
 - Evan Arganta
 - Alief Rizky Ramadhan Atmadja
