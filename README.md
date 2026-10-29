@@ -1,11 +1,6 @@
-<div align="center">
+# Ambashooter
 
-### Ambashooter
-<i>A 2D retro action platformer where you run, jump, and shoot your way through hostile mushroom enemies across multiple stages to reach the victory screen.</i>
-
-</div>
-
-----
+2D retro action platformer where you run, jump, and shoot your way through hostile mushroom enemies across multiple stages.
 
 **Kelompok 3:**
 
