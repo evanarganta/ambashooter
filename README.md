@@ -4,5 +4,5 @@
 - Alief Rizky Ramadhan Atmadja
 - Nicolas Peb Zolo
 - Ignattius Nino Jumantoro
-- Ahmad Haikal Rmadhan
+- Ahmad Haikal Ramadhan
 - M Vallerian Aprilio Gunawan
