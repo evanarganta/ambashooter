@@ -432,7 +432,7 @@ Transform:
   m_GameObject: {fileID: 149920121}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 16, y: 0, z: 0}
+  m_LocalPosition: {x: 19.61, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -710,7 +710,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 18
+      value: 20.99
       objectReference: {fileID: 0}
     - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
       propertyPath: m_LocalPosition.y
@@ -758,63 +758,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3312185949991157249, guid: 9b8b95f6d74fb0e4799cbaecad9bb6b8, type: 3}
   m_PrefabInstance: {fileID: 6619227380446574211}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &1473422770
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1420654729745211440, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_Name
-      value: Level 2 Mushroom 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.056
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
 --- !u!1 &1521338523
 GameObject:
   m_ObjectHideFlags: 0
@@ -872,12 +815,12 @@ BoxCollider2D:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
     oldSize: {x: 0.5, y: 0.5}
-    newSize: {x: 3, y: 0.5}
+    newSize: {x: 4, y: 0.5}
     adaptiveTilingThreshold: 0.5
     drawMode: 2
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 3, y: 0.5}
+  m_Size: {x: 4, y: 0.5}
   m_EdgeRadius: 0
 --- !u!212 &1521338525
 SpriteRenderer:
@@ -933,7 +876,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 2
-  m_Size: {x: 3, y: 0.5}
+  m_Size: {x: 4, y: 0.5}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -948,7 +891,7 @@ Transform:
   m_GameObject: {fileID: 1521338523}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8, y: 1.5, z: 0}
+  m_LocalPosition: {x: 10.64, y: 1.43, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -968,7 +911,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 14
+      value: 14.99
       objectReference: {fileID: 0}
     - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1025,7 +968,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 22
+      value: 24.76
       objectReference: {fileID: 0}
     - target: {fileID: 1715041444120384677, guid: e7161cb4c431c684c9e910549c5495fe, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1140,12 +1083,12 @@ BoxCollider2D:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
     oldSize: {x: 0.5, y: 0.5}
-    newSize: {x: 10, y: 1}
+    newSize: {x: 15, y: 1}
     adaptiveTilingThreshold: 0.5
     drawMode: 2
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 10, y: 1}
+  m_Size: {x: 15, y: 1}
   m_EdgeRadius: 0
 --- !u!212 &1850817688
 SpriteRenderer:
@@ -1201,7 +1144,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 2
-  m_Size: {x: 10, y: 1}
+  m_Size: {x: 15, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -1300,7 +1243,6 @@ SceneRoots:
   - {fileID: 823910}
   - {fileID: 823920}
   - {fileID: 901002}
-  - {fileID: 1473422770}
   - {fileID: 1706918200}
   - {fileID: 1325642349}
   - {fileID: 1759294934}
