@@ -5,12 +5,21 @@ public class CameraFollow : MonoBehaviour
 {
     public bool isFollowing = true;
     public Transform target;
-    public Vector3 targetOffset = new Vector3(0, 1f, -10f);
+    public Vector3 targetOffset = new Vector3(0, 0.5f, -10f);
+
+    [Tooltip("Target orthographic size for 2D camera zoom (smaller value = closer/zoomed in). Default was 5.")]
+    [SerializeField] private float orthographicSize = 4f;
 
     [Range(0f, 1.0f)] public float followRatio = 0.1f; // Smaller = smoother, 1.0 = instant
 
     void Awake()
     {
+        Camera cam = GetComponent<Camera>();
+        if (cam != null && cam.orthographic)
+        {
+            cam.orthographicSize = orthographicSize;
+        }
+
         // Ensure AudioListener is attached to the camera so spatial sound pans left/right accurately
         if (GetComponent<AudioListener>() == null)
         {
