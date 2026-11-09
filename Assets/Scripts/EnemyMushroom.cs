@@ -70,10 +70,5 @@ public class EnemyMushroom : EnemyController
             // Shoots towards the player
             bullet.Launch(new Vector2(direction, 0), "Player", bulletSpeed, attack);
         }
-
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayEnemyShoot(transform.position);
-        }
     }
 }

@@ -118,18 +118,7 @@ public class Bullet : MonoBehaviour
         return damage;
     }
 
-    // Called by the player parry — launches or reflects in specified direction, retargets, and boosts speed/damage
-    public void ParryBoost(Vector2 newDirection, string newTargetTag, float speedMultiplier = 1f, float damageBonus = 1.5f)
-    {
-        if (hasHit) return;
-        direction = newDirection;
-        targetTag = newTargetTag;
-        speed *= speedMultiplier;
-        damage *= damageBonus;
-        // Reset lifespan so boosted bullet has full travel time
-        dieTime = 3f;
-    }
-
+    // Called by the player parry — flips direction, retargets, and boosts speed
     public void Reflect(string newTargetTag, float speedMultiplier = 1f)
     {
         if (hasHit) return;

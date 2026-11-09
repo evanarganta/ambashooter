@@ -9,15 +9,6 @@ public class CameraFollow : MonoBehaviour
 
     [Range(0f, 1.0f)] public float followRatio = 0.1f; // Smaller = smoother, 1.0 = instant
 
-    void Awake()
-    {
-        // Ensure AudioListener is attached to the camera so spatial sound pans left/right accurately
-        if (GetComponent<AudioListener>() == null)
-        {
-            gameObject.AddComponent<AudioListener>();
-        }
-    }
-
     void LateUpdate()
     {
         if (target != null && isFollowing)

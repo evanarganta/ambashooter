@@ -31,25 +31,17 @@ public class GameManager : MonoBehaviour
 
     public static void GameOver()
     {
-        if (!isLevelComplete && !isGameOver)
+        if (!isLevelComplete)
         {
             isGameOver = true;
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayGameOver();
-            }
         }
     }
 
     public static void CompleteLevel()
     {
-        if (!isGameOver && !isLevelComplete)
+        if (!isGameOver)
         {
             isLevelComplete = true;
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayLevelComplete();
-            }
         }
     }
 

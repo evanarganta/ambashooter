@@ -171,10 +171,6 @@ public class PlayerController : MonoBehaviour
         // Reset vertical velocity before jumping for consistent jump height
         rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0);
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPlayerJump();
-        }
     }
 
     void AnimationController()
@@ -232,7 +228,7 @@ public class PlayerController : MonoBehaviour
             }
 
             Bullet bullet = col.GetComponent<Bullet>();
-            if (bullet == null)
+            if (bullet == null || bullet.targetTag != "Player")
             {
                 continue;
             }
@@ -244,36 +240,14 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            if (bullet.targetTag == "Player")
-            {
-                // Enemy bullet incoming -> Reflect back towards enemies
-                bullet.Reflect("Enemy", parrySpeedMultiplier);
-                parried = true;
-            }
-            else if (bullet.targetTag == "Enemy")
-            {
-                // Player's own bullet -> Boost forward in the facing direction with speed + damage multiplier
-                Vector2 boostDir = new Vector2(facingSign, 0f);
-                bullet.ParryBoost(boostDir, "Enemy", parrySpeedMultiplier, 1.5f);
-                parried = true;
-            }
+            bullet.Reflect("Enemy", parrySpeedMultiplier);
+            parried = true;
         }
 
         if (parried)
         {
             UIManager.TriggerParryFlash();
             StartCoroutine(ParryVisual());
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayParrySuccess();
-            }
-        }
-        else
-        {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayParryMiss();
-            }
         }
     }
 
@@ -327,11 +301,6 @@ public class PlayerController : MonoBehaviour
         {
             bullet.Launch(new Vector2(direction, 0), "Enemy", bulletSpeed, attack);
         }
-
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPlayerShoot();
-        }
     }
 
     public void Bounce()
@@ -358,13 +327,6 @@ public class PlayerController : MonoBehaviour
         if (health <= 0f)
         {
             Die();
-        }
-        else
-        {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayPlayerHurt();
-            }
         }
     }
 
@@ -396,11 +358,6 @@ public class PlayerController : MonoBehaviour
         if (rb2 != null)
         {
             rb2.linearVelocity = Vector2.zero;
-        }
-
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayPlayerDie();
         }
 
         GameManager.GameOver();

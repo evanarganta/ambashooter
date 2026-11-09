@@ -102,10 +102,6 @@ public class EnemyController : MonoBehaviour
         else
         {
             invulnerabilityTimer = invulnerabilityDuration;
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayEnemyHurt(transform.position);
-            }
         }
     }
 
@@ -125,10 +121,6 @@ public class EnemyController : MonoBehaviour
         }
 
         isDead = true;
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlayEnemyDie(transform.position);
-        }
         StopAllCoroutines();
         ScoreManager.DefeatEnemy();
         Destroy(gameObject);
