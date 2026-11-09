@@ -152,6 +152,16 @@ MonoBehaviour:
   bulletSpeed: 10
   shootingTimeMax: 0.3
   gunOffset: {x: 0.75, y: -0.2}
+  parryRadius: 0.85
+  parryCooldown: 1
+  parrySpeedMultiplier: 2
+  parrySprite: {fileID: -5603387447916614820, guid: 5d9d57314dad9b14995e5b063bba8da7, type: 3}
+  parrySpriteHoldTime: 0.5
+  knockbackForceX: 3
+  knockbackForceY: 3.5
+  enemyKnockbackForce: 4.5
+  invulnerabilityDuration: 0.4
+  contactDamage: 5
 --- !u!50 &579525517250885461
 Rigidbody2D:
   serializedVersion: 5
@@ -233,7 +243,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage:
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
@@ -25,10 +26,27 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float shootingTimeMax = 0.3f;
     [SerializeField] private Vector2 gunOffset = new Vector2(0.75f, -0.2f);
 
+    [Header("Parry")]
+    [SerializeField] private float parryRadius = 0.85f;
+    [SerializeField] private float parryCooldown = 1f;
+    [SerializeField] private float parrySpeedMultiplier = 2f;
+    [SerializeField] private Sprite parrySprite;
+    [SerializeField] private float parrySpriteHoldTime = 0.18f;
+
+    [Header("Knockback & Contact")]
+    [SerializeField] private float knockbackForceX = 3f;
+    [SerializeField] private float knockbackForceY = 3.5f;
+    [SerializeField] private float enemyKnockbackForce = 4.5f;
+    [SerializeField] private float invulnerabilityDuration = 0.4f;
+    [SerializeField] private float contactDamage = 5f;
+
     private float shootingTime = 0f;
     private bool isShooting = false;
     private bool isGrounded = true;
     private bool isDead;
+    private float knockbackTimer = 0f;
+    private float invulnerabilityTimer = 0f;
+    private float parryTimer = 0f;
     private Rigidbody2D rb2;
 
     void Awake()
@@ -57,11 +75,35 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (invulnerabilityTimer > 0f)
+        {
+            invulnerabilityTimer -= Time.deltaTime;
+            if (graphic != null && !isDead)
+            {
+                float alpha = (Mathf.FloorToInt(invulnerabilityTimer * 20f) % 2 == 0) ? 0.35f : 1f;
+                Color c = graphic.color;
+                c.a = alpha;
+                graphic.color = c;
+            }
+        }
+        else if (graphic != null && !isDead && graphic.color.a < 1f)
+        {
+            Color c = graphic.color;
+            c.a = 1f;
+            graphic.color = c;
+        }
+
+        if (knockbackTimer > 0f)
+        {
+            knockbackTimer -= Time.deltaTime;
+        }
+
         if (canBeMoved)
         {
             MovementController();
             JumpController();
             ShootController();
+            ParryController();
         }
 
         FallDie();
@@ -70,10 +112,22 @@ public class PlayerController : MonoBehaviour
 
     void MovementController()
     {
+        if (knockbackTimer > 0f)
+        {
+            return;
+        }
+
         float x = Input.GetAxisRaw("Horizontal");
 
         Vector2 velocity = rb2.linearVelocity;
-        velocity.x = x * moveSpeed;
+        if (x != 0f)
+        {
+            velocity.x = x * moveSpeed;
+        }
+        else
+        {
+            velocity.x = Mathf.MoveTowards(velocity.x, 0f, moveSpeed * 15f * Time.deltaTime);
+        }
         rb2.linearVelocity = velocity;
 
         if (velocity.x < 0)
@@ -88,6 +142,11 @@ public class PlayerController : MonoBehaviour
 
     void JumpController()
     {
+        if (knockbackTimer > 0f)
+        {
+            return;
+        }
+
         // Cast a ray downward to check for ground
         RaycastHit2D ray = Physics2D.Raycast(transform.position, Vector2.down, 10f, LayerMask.GetMask("Obstacle"));
 
@@ -131,13 +190,99 @@ public class PlayerController : MonoBehaviour
 
     void ShootController()
     {
-        isShooting = Input.GetKey(KeyCode.Z);
+        isShooting = Input.GetKey(KeyCode.Z) || Input.GetMouseButton(0);
         shootingTime -= Time.deltaTime;
 
         if (isShooting && shootingTime <= 0)
         {
             shootingTime = shootingTimeMax;
             Shoot();
+        }
+    }
+
+    void ParryController()
+    {
+        if (parryTimer > 0f)
+        {
+            parryTimer -= Time.deltaTime;
+        }
+
+        bool parryPressed = Input.GetKeyDown(KeyCode.X) || Input.GetMouseButtonDown(1);
+        if (!parryPressed || parryTimer > 0f)
+        {
+            return;
+        }
+
+        parryTimer = parryCooldown;
+
+        // Determine which horizontal side the player is facing
+        float facingSign = (graphic != null && graphic.flipX) ? -1f : 1f;
+
+        bool parried = false;
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, parryRadius);
+        foreach (Collider2D col in hits)
+        {
+            if (!col.CompareTag("Bullet"))
+            {
+                continue;
+            }
+
+            Bullet bullet = col.GetComponent<Bullet>();
+            if (bullet == null || bullet.targetTag != "Player")
+            {
+                continue;
+            }
+
+            // Only parry bullets that are on the side the player is facing
+            float bulletSide = col.transform.position.x - transform.position.x;
+            if (bulletSide * facingSign < 0f)
+            {
+                continue;
+            }
+
+            bullet.Reflect("Enemy", parrySpeedMultiplier);
+            parried = true;
+        }
+
+        if (parried)
+        {
+            UIManager.TriggerParryFlash();
+            StartCoroutine(ParryVisual());
+        }
+    }
+
+    private static bool HasAnimatorParam(Animator anim, string name, AnimatorControllerParameterType type)
+    {
+        foreach (var p in anim.parameters)
+            if (p.name == name && p.type == type) return true;
+        return false;
+    }
+
+    private IEnumerator ParryVisual()
+    {
+        // Fire animator trigger so any Parry state in the Animator can play
+        if (animator != null && HasAnimatorParam(animator, "parry", AnimatorControllerParameterType.Trigger))
+        {
+            animator.SetTrigger("parry");
+        }
+
+        // Swap to parry sprite, temporarily pausing the animator so it doesn't override
+        if (graphic != null && parrySprite != null)
+        {
+            Sprite original = graphic.sprite;
+            bool animWasEnabled = animator != null && animator.enabled;
+
+            if (animWasEnabled) animator.enabled = false;
+            graphic.sprite = parrySprite;
+
+            yield return new WaitForSeconds(parrySpriteHoldTime);
+
+            graphic.sprite = original;
+            if (animWasEnabled) animator.enabled = true;
+        }
+        else
+        {
+            yield return null;
         }
     }
 
@@ -158,14 +303,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public void Bounce()
+    {
+        if (isDead || rb2 == null)
+        {
+            return;
+        }
+
+        // Reset vertical velocity for consistent bounce height, keep horizontal momentum
+        rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0f);
+        rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+    }
+
     public void DamagedBy(float damage)
     {
-        if (isDead)
+        if (isDead || invulnerabilityTimer > 0f)
         {
             return;
         }
 
         health = Mathf.Max(0f, health - damage);
+        invulnerabilityTimer = invulnerabilityDuration;
         if (health <= 0f)
         {
             Die();
@@ -190,6 +348,9 @@ public class PlayerController : MonoBehaviour
         isDead = true;
         if (graphic != null)
         {
+            Color c = graphic.color;
+            c.a = 1f;
+            graphic.color = c;
             graphic.enabled = false;
         }
 
@@ -207,7 +368,85 @@ public class PlayerController : MonoBehaviour
         EnemyController enemy = collision.collider.GetComponentInParent<EnemyController>();
         if (enemy != null)
         {
-            DamagedBy(enemy.GetAttackDamage());
+            HandleEnemyCollision(collision, enemy);
+        }
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (invulnerabilityTimer > 0f)
+        {
+            return;
+        }
+
+        EnemyController enemy = collision.collider.GetComponentInParent<EnemyController>();
+        if (enemy != null)
+        {
+            HandleEnemyCollision(collision, enemy);
+        }
+    }
+
+    private void HandleEnemyCollision(Collision2D collision, EnemyController enemy)
+    {
+        if (isDead || enemy == null || enemy.isDead)
+        {
+            return;
+        }
+
+        // Determine if player stepped on the enemy from above
+        bool isSteppedOn = false;
+        for (int i = 0; i < collision.contactCount; i++)
+        {
+            ContactPoint2D contact = collision.GetContact(i);
+            // Normal points from enemy towards player
+            if (contact.normal.y > 0.5f)
+            {
+                isSteppedOn = true;
+                break;
+            }
+        }
+
+        if (!isSteppedOn && transform.position.y > enemy.transform.position.y + 0.3f && rb2.linearVelocity.y <= 0.5f)
+        {
+            isSteppedOn = true;
+        }
+
+        // Both take damage from touching
+        if (invulnerabilityTimer <= 0f)
+        {
+            float playerDamageToTake = enemy.GetAttackDamage();
+            float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
+
+            DamagedBy(playerDamageToTake);
+            enemy.DamagedBy(enemyDamageToTake);
+        }
+
+        // Physical reaction
+        if (isSteppedOn)
+        {
+            // Stepped on: player automatically jumps again
+            if (!isDead)
+            {
+                Bounce();
+            }
+        }
+        else
+        {
+            // Bumped: both player and mushroom get pushed back away from each other
+            if (!isDead)
+            {
+                float pushDirX = transform.position.x < enemy.transform.position.x ? -1f : 1f;
+                if (Mathf.Abs(transform.position.x - enemy.transform.position.x) < 0.05f)
+                {
+                    pushDirX = graphic != null && graphic.flipX ? 1f : -1f;
+                }
+
+                knockbackTimer = 0.65f;
+                rb2.linearVelocity = new Vector2(pushDirX * knockbackForceX, knockbackForceY);
+            }
+
+            float enemyPushDirX = transform.position.x < enemy.transform.position.x ? 1f : -1f;
+            enemy.ApplyKnockback(new Vector2(enemyPushDirX, 0f), enemyKnockbackForce);
         }
     }
 

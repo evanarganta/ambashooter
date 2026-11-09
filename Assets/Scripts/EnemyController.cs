@@ -9,22 +9,86 @@ public class EnemyController : MonoBehaviour
 
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2.5f;
-    private bool isDead;
+    public bool isDead { get; private set; }
 
-    void Update()
+    [Header("Damage Blink")]
+    [SerializeField] private float invulnerabilityDuration = 0.4f;
+
+    protected Rigidbody2D rb2;
+    protected float knockbackTimer = 0f;
+    private float invulnerabilityTimer = 0f;
+    private SpriteRenderer cachedSr;
+
+    protected virtual void Awake()
     {
-        Movement();
+        rb2 = GetComponent<Rigidbody2D>();
+        cachedSr = GetComponentInChildren<SpriteRenderer>();
+    }
+
+    protected virtual void Update()
+    {
+        if (knockbackTimer > 0f)
+        {
+            knockbackTimer -= Time.deltaTime;
+            if (rb2 != null)
+            {
+                float newX = Mathf.MoveTowards(rb2.linearVelocity.x, 0f, 15f * Time.deltaTime);
+                rb2.linearVelocity = new Vector2(newX, rb2.linearVelocity.y);
+            }
+        }
+        else
+        {
+            Movement();
+        }
+
+        if (invulnerabilityTimer > 0f)
+        {
+            invulnerabilityTimer -= Time.deltaTime;
+            if (cachedSr != null)
+            {
+                float alpha = (Mathf.FloorToInt(invulnerabilityTimer * 20f) % 2 == 0) ? 0.35f : 1f;
+                Color c = cachedSr.color;
+                c.a = alpha;
+                cachedSr.color = c;
+            }
+        }
+        else if (cachedSr != null && cachedSr.color.a < 1f)
+        {
+            Color c = cachedSr.color;
+            c.a = 1f;
+            cachedSr.color = c;
+        }
+
         FallDie();
     }
 
     protected virtual void Movement()
     {
-        // To be overridden by specific enemy types
+        // To be overriden
+    }
+
+    public virtual void ApplyKnockback(Vector2 direction, float force)
+    {
+        if (isDead)
+        {
+            return;
+        }
+
+        if (rb2 == null)
+        {
+            rb2 = GetComponent<Rigidbody2D>();
+        }
+
+        if (rb2 != null)
+        {
+            rb2.linearVelocity = new Vector2(direction.x * force, 2.5f);
+            knockbackTimer = 0.25f;
+        }
     }
 
     public void DamagedBy(float damage)
     {
-        if (isDead)
+        if (isDead || invulnerabilityTimer > 0f)
         {
             return;
         }
@@ -35,11 +99,14 @@ public class EnemyController : MonoBehaviour
             health = 0;
             Die();
         }
+        else
+        {
+            invulnerabilityTimer = invulnerabilityDuration;
+        }
     }
 
     void FallDie()
     {
-        // Destroy if it falls off the map
         if (transform.position.y < -20)
         {
             Die();
@@ -54,6 +121,7 @@ public class EnemyController : MonoBehaviour
         }
 
         isDead = true;
+        StopAllCoroutines();
         ScoreManager.DefeatEnemy();
         Destroy(gameObject);
     }

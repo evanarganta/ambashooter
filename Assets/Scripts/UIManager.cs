@@ -13,8 +13,16 @@ public class UIManager : MonoBehaviour
     private GameObject gameOverUI;
     private GameObject levelCompleteUI;
 
+    private static UIManager instance;
+
+    // Parry vignette flash
+    private Image parryFlashImage;
+    private float parryFlashTimer = 0f;
+    private const float ParryFlashDuration = 0.3f;
+
     void Start()
     {
+        instance = this;
         player = FindAnyObjectByType<PlayerController>();
         CreateCanvas();
     }
@@ -40,6 +48,25 @@ public class UIManager : MonoBehaviour
         {
             levelCompleteUI.SetActive(!GameManager.isGameOver && GameManager.isLevelComplete);
         }
+
+        // Fade out parry vignette
+        if (parryFlashTimer > 0f && parryFlashImage != null)
+        {
+            parryFlashTimer -= Time.deltaTime;
+            float alpha = Mathf.Clamp01(parryFlashTimer / ParryFlashDuration);
+            Color c = parryFlashImage.color;
+            c.a = alpha;
+            parryFlashImage.color = c;
+        }
+    }
+
+    public static void TriggerParryFlash()
+    {
+        if (instance == null || instance.parryFlashImage == null) return;
+        instance.parryFlashTimer = ParryFlashDuration;
+        Color c = instance.parryFlashImage.color;
+        c.a = 1f;
+        instance.parryFlashImage.color = c;
     }
 
     private void CreateCanvas()
@@ -61,6 +88,12 @@ public class UIManager : MonoBehaviour
         levelCompleteUI = CreatePanel(canvas.transform, "LevelCompletePanel", "LEVEL COMPLETE!\nPress SPACE to Continue", new Color(0.02f, 0.16f, 0.04f, 0.86f));
         gameOverUI.SetActive(false);
         levelCompleteUI.SetActive(false);
+
+        // Full-screen parry vignette overlay (white edges, transparent center)
+        parryFlashImage = CreateFullscreenOverlay(canvas.transform, "ParryFlash", new Color(1f, 1f, 1f, 0f));
+        Shader vignetteShader = Resources.Load<Shader>("UIInvert");
+        if (vignetteShader != null)
+            parryFlashImage.material = new Material(vignetteShader);
     }
 
     private void CreateHealthBar(Transform canvas)
@@ -146,5 +179,20 @@ public class UIManager : MonoBehaviour
         rect.pivot = new Vector2(1f, 1f);
         rect.anchoredPosition = position;
         rect.sizeDelta = size;
+    }
+
+    private Image CreateFullscreenOverlay(Transform canvas, string name, Color startColor)
+    {
+        GameObject obj = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        RectTransform rect = obj.GetComponent<RectTransform>();
+        rect.SetParent(canvas, false);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        Image img = obj.GetComponent<Image>();
+        img.color = startColor;
+        img.raycastTarget = false;
+        return img;
     }
 }

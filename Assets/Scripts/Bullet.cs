@@ -54,6 +54,17 @@ public class Bullet : MonoBehaviour
             return;
         }
 
+        // Stop and destroy on hitting walls/ground
+        int obstacleLayer = LayerMask.GetMask("Obstacle");
+        RaycastHit2D wallHit = Physics2D.CircleCast(rb2.position, radius, normalizedDirection, distance, obstacleLayer);
+        if (wallHit.collider != null)
+        {
+            hasHit = true;
+            bulletCollider.enabled = false;
+            Destroy(gameObject);
+            return;
+        }
+
         rb2.MovePosition(rb2.position + normalizedDirection * distance);
     }
 
@@ -105,5 +116,16 @@ public class Bullet : MonoBehaviour
     public float GetDamage()
     {
         return damage;
+    }
+
+    // Called by the player parry — flips direction, retargets, and boosts speed
+    public void Reflect(string newTargetTag, float speedMultiplier = 1f)
+    {
+        if (hasHit) return;
+        direction = -direction;
+        targetTag = newTargetTag;
+        speed *= speedMultiplier;
+        // Reset lifespan so reflected bullet has full travel time
+        dieTime = 3f;
     }
 }
