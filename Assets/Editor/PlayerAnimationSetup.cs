@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-[InitializeOnLoad]
 internal static class PlayerAnimationSetup
 {
     private const string AnimationFolder = "Assets/Animations/Player";
@@ -19,20 +18,6 @@ internal static class PlayerAnimationSetup
     private const string LevelOnePath = "Assets/Scenes/Level 1.unity";
     private const string LevelTwoPath = "Assets/Scenes/Level 2.unity";
     private const string EndLevelPath = "Assets/Scenes/EndLevel.unity";
-
-    static PlayerAnimationSetup()
-    {
-        EditorApplication.delayCall += EnsurePlayerAnimations;
-        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-    }
-
-    private static void OnPlayModeStateChanged(PlayModeStateChange state)
-    {
-        if (state == PlayModeStateChange.EnteredEditMode)
-        {
-            EditorApplication.delayCall += EnsurePlayerAnimations;
-        }
-    }
 
     [MenuItem("Tools/Setup Player, Mushroom, and Levels")]
     private static void EnsurePlayerAnimations()
@@ -403,7 +388,6 @@ internal static class PlayerAnimationSetup
             throw new InvalidOperationException($"Could not load mushroom prefab at {MushroomPrefabPath}.");
         }
 
-        AddMushroomIfMissing(scene, mushroomPrefab, "Level 2 Mushroom 1", new Vector3(10f, 1.056f, 0f));
         AddMushroomIfMissing(scene, mushroomPrefab, "Level 2 Mushroom 2", new Vector3(14f, 1.056f, 0f));
         AddMushroomIfMissing(scene, mushroomPrefab, "Level 2 Mushroom 3", new Vector3(18f, 1.056f, 0f));
         AddMushroomIfMissing(scene, mushroomPrefab, "Level 2 Mushroom 4", new Vector3(22f, 1.056f, 0f));
