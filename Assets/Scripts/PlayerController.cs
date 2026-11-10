@@ -49,6 +49,11 @@ public class PlayerController : MonoBehaviour
     private float parryTimer = 0f;
     private Rigidbody2D rb2;
 
+    public float ParryCooldown => parryCooldown;
+    public float ParryTimer => parryTimer;
+    public float ParryCooldownProgress => parryCooldown > 0f ? Mathf.Clamp01(1f - (parryTimer / parryCooldown)) : 1f;
+    public bool IsParryReady => parryTimer <= 0f;
+
     void Awake()
     {
         Instance = this;
@@ -71,6 +76,29 @@ public class PlayerController : MonoBehaviour
         }
 
         healthMax = health;
+
+        // Ensure frictionless physics so player never sticks or freezes on walls during freefall
+        ApplyFrictionlessMaterial();
+    }
+
+    private void ApplyFrictionlessMaterial()
+    {
+        PhysicsMaterial2D noFrictionMat = new PhysicsMaterial2D("PlayerNoFriction")
+        {
+            friction = 0f,
+            bounciness = 0f
+        };
+
+        if (rb2 != null)
+        {
+            rb2.sharedMaterial = noFrictionMat;
+        }
+
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.sharedMaterial = noFrictionMat;
+        }
     }
 
     void Update()
@@ -122,7 +150,15 @@ public class PlayerController : MonoBehaviour
         Vector2 velocity = rb2.linearVelocity;
         if (x != 0f)
         {
-            velocity.x = x * moveSpeed;
+            // If in freefall/air and pushing directly into a wall, prevent pushing into the wall to avoid sticking/freezing
+            if (!isGrounded && IsPushingAgainstWall(x))
+            {
+                velocity.x = 0f;
+            }
+            else
+            {
+                velocity.x = x * moveSpeed;
+            }
         }
         else
         {
@@ -130,14 +166,30 @@ public class PlayerController : MonoBehaviour
         }
         rb2.linearVelocity = velocity;
 
-        if (velocity.x < 0)
+        if (x < 0)
         {
             graphic.flipX = true;
         }
-        else if (velocity.x > 0)
+        else if (x > 0)
         {
             graphic.flipX = false;
         }
+    }
+
+    private bool IsPushingAgainstWall(float dirX)
+    {
+        Vector2 direction = Vector2.right * Mathf.Sign(dirX);
+        float checkDistance = 0.35f;
+        int obstacleMask = LayerMask.GetMask("Obstacle");
+
+        // Check horizontal contact at upper and lower body
+        Vector2 upperOrigin = (Vector2)transform.position + Vector2.up * 0.25f;
+        Vector2 lowerOrigin = (Vector2)transform.position + Vector2.down * 0.15f;
+
+        RaycastHit2D hitUpper = Physics2D.Raycast(upperOrigin, direction, checkDistance, obstacleMask);
+        RaycastHit2D hitLower = Physics2D.Raycast(lowerOrigin, direction, checkDistance, obstacleMask);
+
+        return (hitUpper.collider != null || hitLower.collider != null);
     }
 
     void JumpController()
@@ -467,24 +519,43 @@ public class PlayerController : MonoBehaviour
             isSteppedOn = true;
         }
 
-        // Both take damage from touching
+        // Damage from touching
         if (invulnerabilityTimer <= 0f)
         {
             float playerDamageToTake = enemy.GetAttackDamage();
-            // Jump bump / head stomp takes half damage, sideways bump takes full damage
-            if (isSteppedOn)
+            // Jump bump / head stomp takes half damage (unless enemy is contact damage immune)
+            if (isSteppedOn && !enemy.isContactDamageImmune)
             {
                 playerDamageToTake *= 0.5f;
             }
 
-            float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
-
             DamagedBy(playerDamageToTake);
-            enemy.DamagedBy(enemyDamageToTake);
+
+            // Only damage enemy if it is not contact damage immune
+            if (!enemy.isContactDamageImmune)
+            {
+                float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
+                enemy.DamagedBy(enemyDamageToTake);
+            }
         }
 
         // Physical reaction
-        if (isSteppedOn)
+        if (enemy.isContactDamageImmune)
+        {
+            // Boss / immune enemy is completely unbudged; player is knocked back away
+            if (!isDead)
+            {
+                float pushDirX = transform.position.x < enemy.transform.position.x ? -1f : 1f;
+                if (Mathf.Abs(transform.position.x - enemy.transform.position.x) < 0.05f)
+                {
+                    pushDirX = graphic != null && graphic.flipX ? 1f : -1f;
+                }
+
+                knockbackTimer = 0.65f;
+                rb2.linearVelocity = new Vector2(pushDirX * knockbackForceX, knockbackForceY);
+            }
+        }
+        else if (isSteppedOn)
         {
             // Stepped on: player automatically jumps again
             if (!isDead)

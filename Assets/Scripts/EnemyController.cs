@@ -10,6 +10,7 @@ public class EnemyController : MonoBehaviour
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2.5f;
     public bool isDead { get; private set; }
+    public bool isContactDamageImmune = false;
 
     [Header("Damage Blink")]
     [SerializeField] private float invulnerabilityDuration = 0.4f;
