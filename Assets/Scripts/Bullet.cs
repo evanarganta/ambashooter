@@ -93,7 +93,23 @@ public class Bullet : MonoBehaviour
                 return;
             }
 
+            // Normal bullet damage is ALWAYS dealt
             player.DamagedBy(damage);
+
+            // Check if player specifically stomped on the bullet from above:
+            // 1) Player must be falling downwards (linearVelocity.y < -0.1f)
+            // 2) Player's center must be strictly above the bullet
+            Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
+            CapsuleCollider2D playerCol = player.GetComponent<CapsuleCollider2D>();
+            float playerBottom = playerCol != null ? playerCol.bounds.min.y : player.transform.position.y;
+
+            bool isJumpingOnBullet = playerRb != null && playerRb.linearVelocity.y < -0.1f && playerBottom >= (transform.position.y - 0.05f);
+
+            if (isJumpingOnBullet)
+            {
+                // Stomping also launches player upward with a bounce
+                player.Bounce();
+            }
         }
         else
         {

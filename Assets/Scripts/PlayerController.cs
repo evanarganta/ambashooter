@@ -247,6 +247,9 @@ public class PlayerController : MonoBehaviour
             if (bullet.targetTag == "Player")
             {
                 // Enemy bullet incoming -> Reflect back towards enemies
+                // Heal by half the incoming bullet damage that player avoided taking
+                Heal(bullet.GetDamage() * 0.5f);
+
                 bullet.Reflect("Enemy", parrySpeedMultiplier);
                 parried = true;
             }
@@ -344,6 +347,16 @@ public class PlayerController : MonoBehaviour
         // Reset vertical velocity for consistent bounce height, keep horizontal momentum
         rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0f);
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPlayerJump();
+        }
+    }
+
+    public void Heal(float amount)
+    {
+        if (isDead || amount <= 0f) return;
+        health = Mathf.Min(healthMax, health + amount);
     }
 
     public void DamagedBy(float damage)
@@ -458,6 +471,12 @@ public class PlayerController : MonoBehaviour
         if (invulnerabilityTimer <= 0f)
         {
             float playerDamageToTake = enemy.GetAttackDamage();
+            // Jump bump / head stomp takes half damage, sideways bump takes full damage
+            if (isSteppedOn)
+            {
+                playerDamageToTake *= 0.5f;
+            }
+
             float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
 
             DamagedBy(playerDamageToTake);
