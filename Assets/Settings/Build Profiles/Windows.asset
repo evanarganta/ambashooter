@@ -27,7 +27,19 @@ MonoBehaviour:
     m_guid: 3fc82751e20410a4f9c601123a96eace
   - m_enabled: 1
     m_path: Assets/Scenes/Level 2.unity
+    m_guid: 884809ec5eed446f86d5697e3be1eaee
+  - m_enabled: 1
+    m_path: Assets/Scenes/Level 3.unity
     m_guid: 954cf423aba56c447a4dc7a4924f7065
+  - m_enabled: 1
+    m_path: Assets/Scenes/Level 4.unity
+    m_guid: 68866af0261f8d846b6d8571bf699e17
+  - m_enabled: 1
+    m_path: Assets/Scenes/Level 5.unity
+    m_guid: 4a1d1a32d2e0d7145be77b056fa0f49a
+  - m_enabled: 1
+    m_path: Assets/Scenes/Level 6.unity
+    m_guid: b7e298f1db894c37bde65af2b3274b18
   - m_enabled: 1
     m_path: Assets/Scenes/EndLevel.unity
     m_guid: 1b5ebdebb8e95514c8f55251e343e673
