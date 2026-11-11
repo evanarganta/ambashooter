@@ -49,6 +49,11 @@ public class PlayerController : MonoBehaviour
     private float parryTimer = 0f;
     private Rigidbody2D rb2;
 
+    public float ParryCooldown => parryCooldown;
+    public float ParryTimer => parryTimer;
+    public float ParryCooldownProgress => parryCooldown > 0f ? Mathf.Clamp01(1f - (parryTimer / parryCooldown)) : 1f;
+    public bool IsParryReady => parryTimer <= 0f;
+
     void Awake()
     {
         Instance = this;
@@ -71,6 +76,38 @@ public class PlayerController : MonoBehaviour
         }
 
         healthMax = health;
+
+        ApplyFrictionlessMaterial();
+
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Level 6" || FindObjectOfType<BossMushroom>() != null)
+        {
+            SetInvulnerable(5f);
+        }
+    }
+
+    private static PhysicsMaterial2D cachedFrictionlessMat;
+
+    private void ApplyFrictionlessMaterial()
+    {
+        if (cachedFrictionlessMat == null)
+        {
+            cachedFrictionlessMat = new PhysicsMaterial2D("PlayerNoFriction")
+            {
+                friction = 0f,
+                bounciness = 0f
+            };
+        }
+
+        if (rb2 != null)
+        {
+            rb2.sharedMaterial = cachedFrictionlessMat;
+        }
+
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.sharedMaterial = cachedFrictionlessMat;
+        }
     }
 
     void Update()
@@ -122,7 +159,14 @@ public class PlayerController : MonoBehaviour
         Vector2 velocity = rb2.linearVelocity;
         if (x != 0f)
         {
-            velocity.x = x * moveSpeed;
+            if (!isGrounded && IsPushingAgainstWall(x))
+            {
+                velocity.x = 0f;
+            }
+            else
+            {
+                velocity.x = x * moveSpeed;
+            }
         }
         else
         {
@@ -130,14 +174,29 @@ public class PlayerController : MonoBehaviour
         }
         rb2.linearVelocity = velocity;
 
-        if (velocity.x < 0)
+        if (x < 0)
         {
             graphic.flipX = true;
         }
-        else if (velocity.x > 0)
+        else if (x > 0)
         {
             graphic.flipX = false;
         }
+    }
+
+    private bool IsPushingAgainstWall(float dirX)
+    {
+        Vector2 direction = Vector2.right * Mathf.Sign(dirX);
+        float checkDistance = 0.35f;
+        int obstacleMask = LayerMask.GetMask("Obstacle");
+
+        Vector2 upperOrigin = (Vector2)transform.position + Vector2.up * 0.25f;
+        Vector2 lowerOrigin = (Vector2)transform.position + Vector2.down * 0.15f;
+
+        RaycastHit2D hitUpper = Physics2D.Raycast(upperOrigin, direction, checkDistance, obstacleMask);
+        RaycastHit2D hitLower = Physics2D.Raycast(lowerOrigin, direction, checkDistance, obstacleMask);
+
+        return (hitUpper.collider != null || hitLower.collider != null);
     }
 
     void JumpController()
@@ -147,7 +206,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Cast a ray downward to check for ground
         RaycastHit2D ray = Physics2D.Raycast(transform.position, Vector2.down, 10f, LayerMask.GetMask("Obstacle"));
 
         if (ray.collider != null && ray.distance < minGroundDistance)
@@ -159,7 +217,6 @@ public class PlayerController : MonoBehaviour
             isGrounded = false;
         }
 
-        // Jump when Up Arrow, W, or Spacebar is pressed
         if ((Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
         {
             Jump();
@@ -168,7 +225,6 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        // Reset vertical velocity before jumping for consistent jump height
         rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0);
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         if (AudioManager.Instance != null)
@@ -219,11 +275,17 @@ public class PlayerController : MonoBehaviour
 
         parryTimer = parryCooldown;
 
-        // Determine which horizontal side the player is facing
         float facingSign = (graphic != null && graphic.flipX) ? -1f : 1f;
 
         bool parried = false;
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, parryRadius);
+
+        Bullet closestBullet = null;
+        float closestDistSq = float.MaxValue;
+
+        Bullet closestFriendly = null;
+        float closestFriendlyDistSq = float.MaxValue;
+
         foreach (Collider2D col in hits)
         {
             if (!col.CompareTag("Bullet"))
@@ -237,27 +299,56 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            // Only parry bullets that are on the side the player is facing
             float bulletSide = col.transform.position.x - transform.position.x;
             if (bulletSide * facingSign < 0f)
             {
                 continue;
             }
 
+            float distSq = ((Vector2)col.transform.position - (Vector2)transform.position).sqrMagnitude;
             if (bullet.targetTag == "Player")
             {
-                // Enemy bullet incoming -> Reflect back towards enemies
-                // Heal by half the incoming bullet damage that player avoided taking
-                Heal(bullet.GetDamage() * 0.5f);
-
-                bullet.Reflect("Enemy", parrySpeedMultiplier);
-                parried = true;
+                if (distSq < closestDistSq)
+                {
+                    closestDistSq = distSq;
+                    closestBullet = bullet;
+                }
             }
             else if (bullet.targetTag == "Enemy")
             {
-                // Player's own bullet -> Boost forward in the facing direction with speed + damage multiplier
+                if (distSq < closestFriendlyDistSq)
+                {
+                    closestFriendlyDistSq = distSq;
+                    closestFriendly = bullet;
+                }
+            }
+        }
+
+        if (closestBullet == null)
+        {
+            closestBullet = closestFriendly;
+        }
+
+        if (closestBullet != null)
+        {
+            if (closestBullet.targetTag == "Player")
+            {
+                if (closestBullet.isBossBullet)
+                {
+                    Heal(closestBullet.bossParryHeal);
+                    closestBullet.ReflectBossBullet();
+                }
+                else
+                {
+                    Heal(Mathf.Max(closestBullet.GetDamage() * 2f, 10f));
+                    closestBullet.Reflect("Enemy", parrySpeedMultiplier);
+                }
+                parried = true;
+            }
+            else if (closestBullet.targetTag == "Enemy")
+            {
                 Vector2 boostDir = new Vector2(facingSign, 0f);
-                bullet.ParryBoost(boostDir, "Enemy", parrySpeedMultiplier, 1.5f);
+                closestBullet.ParryBoost(boostDir, "Enemy", parrySpeedMultiplier, 1.5f);
                 parried = true;
             }
         }
@@ -289,13 +380,11 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator ParryVisual()
     {
-        // Fire animator trigger so any Parry state in the Animator can play
         if (animator != null && HasAnimatorParam(animator, "parry", AnimatorControllerParameterType.Trigger))
         {
             animator.SetTrigger("parry");
         }
 
-        // Swap to parry sprite, temporarily pausing the animator so it doesn't override
         if (graphic != null && parrySprite != null)
         {
             Sprite original = graphic.sprite;
@@ -344,7 +433,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Reset vertical velocity for consistent bounce height, keep horizontal momentum
         rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0f);
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         if (AudioManager.Instance != null)
@@ -357,6 +445,11 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead || amount <= 0f) return;
         health = Mathf.Min(healthMax, health + amount);
+    }
+
+    public void SetInvulnerable(float duration)
+    {
+        invulnerabilityTimer = Mathf.Max(invulnerabilityTimer, duration);
     }
 
     public void DamagedBy(float damage)
@@ -449,12 +542,10 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Determine if player stepped on the enemy from above
         bool isSteppedOn = false;
         for (int i = 0; i < collision.contactCount; i++)
         {
             ContactPoint2D contact = collision.GetContact(i);
-            // Normal points from enemy towards player
             if (contact.normal.y > 0.5f)
             {
                 isSteppedOn = true;
@@ -467,26 +558,39 @@ public class PlayerController : MonoBehaviour
             isSteppedOn = true;
         }
 
-        // Both take damage from touching
         if (invulnerabilityTimer <= 0f)
         {
             float playerDamageToTake = enemy.GetAttackDamage();
-            // Jump bump / head stomp takes half damage, sideways bump takes full damage
-            if (isSteppedOn)
+            if (isSteppedOn && !enemy.isContactDamageImmune)
             {
                 playerDamageToTake *= 0.5f;
             }
 
-            float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
-
             DamagedBy(playerDamageToTake);
-            enemy.DamagedBy(enemyDamageToTake);
+
+            if (!enemy.isContactDamageImmune)
+            {
+                float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
+                enemy.DamagedBy(enemyDamageToTake);
+            }
         }
 
-        // Physical reaction
-        if (isSteppedOn)
+        if (enemy.isContactDamageImmune)
         {
-            // Stepped on: player automatically jumps again
+            if (!isDead)
+            {
+                float pushDirX = transform.position.x < enemy.transform.position.x ? -1f : 1f;
+                if (Mathf.Abs(transform.position.x - enemy.transform.position.x) < 0.05f)
+                {
+                    pushDirX = graphic != null && graphic.flipX ? 1f : -1f;
+                }
+
+                knockbackTimer = 0.65f;
+                rb2.linearVelocity = new Vector2(pushDirX * knockbackForceX, knockbackForceY);
+            }
+        }
+        else if (isSteppedOn)
+        {
             if (!isDead)
             {
                 Bounce();
@@ -494,7 +598,6 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // Bumped: both player and mushroom get pushed back away from each other
             if (!isDead)
             {
                 float pushDirX = transform.position.x < enemy.transform.position.x ? -1f : 1f;

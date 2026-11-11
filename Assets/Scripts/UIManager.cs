@@ -1,37 +1,121 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    [SerializeField] private Sprite healthFillSprite;
-    [SerializeField] private Sprite healthBackgroundSprite;
-    [SerializeField] private Sprite healthBorderSprite;
+    [Header("UI Canvas Prefab (Loads from Assets/Prefabs/UI Canvas.prefab)")]
+    [SerializeField] public GameObject uiCanvasPrefab;
+
+    [Header("Player Health Bar")]
+    [SerializeField] public GameObject playerHealthBarRoot;
+    [SerializeField] public Image playerHealthBar;
+    [SerializeField] public Text playerHealthText;
+
+    [Header("Parry Cooldown UI")]
+    [SerializeField] public Image[] parryCooldownBars;
+    [SerializeField] public Image parryCooldownFill;
+    [SerializeField] public Color parryReadyColor = new Color(0f, 0.95f, 1f, 1f);
+    [SerializeField] public Color parryRechargeColor = new Color(0.08f, 0.55f, 0.65f, 0.85f);
+    [SerializeField] public Color parryEmptyColor = new Color(0.04f, 0.12f, 0.16f, 0.55f);
+
+    [Header("Enemy Progress Counter")]
+    [SerializeField] public Text enemyProgressText;
+
+    [Header("Boss Health Bar")]
+    [SerializeField] public GameObject bossHealthBarRoot;
+    [SerializeField] public Image bossHealthBarFill;
+    [SerializeField] public Text bossNameText;
+    [SerializeField] public Text bossHealthValueText;
+
+    [Header("Game State Panels")]
+    [SerializeField] public GameObject gameOverUI;
+    [SerializeField] public GameObject levelCompleteUI;
+
+    [Header("Parry Vignette")]
+    [SerializeField] public Image parryFlashImage;
 
     private PlayerController player;
-    private Text enemyProgressText;
-    private Image playerHealthBar;
-    private GameObject gameOverUI;
-    private GameObject levelCompleteUI;
-
     private static UIManager instance;
 
-    // Parry vignette flash
-    private Image parryFlashImage;
     private float parryFlashTimer = 0f;
     private const float ParryFlashDuration = 0.3f;
 
-    void Start()
+    void Awake()
     {
         instance = this;
+    }
+
+    void Start()
+    {
         player = FindAnyObjectByType<PlayerController>();
-        CreateCanvas();
+
+        EnsureCanvasInstance();
+
+        if (gameOverUI != null) gameOverUI.SetActive(false);
+        if (levelCompleteUI != null) levelCompleteUI.SetActive(false);
+        if (bossHealthBarRoot != null) bossHealthBarRoot.SetActive(false);
     }
 
     void Update()
     {
-        if (player != null && playerHealthBar != null && player.healthMax > 0f)
+        if (player == null)
         {
-            playerHealthBar.fillAmount = Mathf.Clamp01(player.health / player.healthMax);
+            player = FindAnyObjectByType<PlayerController>();
+        }
+
+        if (player != null && player.healthMax > 0f)
+        {
+            if (playerHealthBar != null)
+            {
+                playerHealthBar.fillAmount = Mathf.Clamp01(player.health / player.healthMax);
+            }
+            if (playerHealthText != null)
+            {
+                playerHealthText.text = Mathf.CeilToInt(player.health).ToString();
+            }
+        }
+
+        if (player != null)
+        {
+            float pProgress = player.ParryCooldownProgress;
+            bool isReady = player.IsParryReady;
+
+            if (parryCooldownBars != null && parryCooldownBars.Length > 0)
+            {
+                int count = parryCooldownBars.Length;
+                for (int i = 0; i < count; i++)
+                {
+                    if (parryCooldownBars[i] == null) continue;
+
+                    float segStart = (float)i / count;
+                    float segEnd = (float)(i + 1) / count;
+                    float segFill = Mathf.Clamp01((pProgress - segStart) / (segEnd - segStart));
+
+                    if (parryCooldownBars[i].type == Image.Type.Filled)
+                    {
+                        parryCooldownBars[i].fillAmount = segFill;
+                        parryCooldownBars[i].color = isReady ? parryReadyColor : parryRechargeColor;
+                    }
+                    else
+                    {
+                        if (segFill >= 0.99f)
+                        {
+                            parryCooldownBars[i].color = isReady ? parryReadyColor : parryRechargeColor;
+                        }
+                        else
+                        {
+                            parryCooldownBars[i].color = Color.Lerp(parryEmptyColor, parryRechargeColor, segFill);
+                        }
+                    }
+                }
+            }
+
+            if (parryCooldownFill != null)
+            {
+                parryCooldownFill.fillAmount = pProgress;
+                parryCooldownFill.color = isReady ? parryReadyColor : parryRechargeColor;
+            }
         }
 
         if (enemyProgressText != null)
@@ -49,7 +133,28 @@ public class UIManager : MonoBehaviour
             levelCompleteUI.SetActive(!GameManager.isGameOver && GameManager.isLevelComplete);
         }
 
-        // Fade out parry vignette
+        BossMushroom boss = BossMushroom.Instance;
+        if (boss != null && !boss.isDead && bossHealthBarRoot != null)
+        {
+            if (!bossHealthBarRoot.activeSelf) bossHealthBarRoot.SetActive(true);
+            if (bossHealthBarFill != null && boss.maxHealth > 0f)
+            {
+                bossHealthBarFill.fillAmount = Mathf.Clamp01(boss.health / boss.maxHealth);
+            }
+            if (bossHealthValueText != null && bossHealthValueText.gameObject.activeSelf)
+            {
+                bossHealthValueText.gameObject.SetActive(false);
+            }
+            if (bossNameText != null)
+            {
+                bossNameText.text = boss.bossName;
+            }
+        }
+        else if (bossHealthBarRoot != null && bossHealthBarRoot.activeSelf)
+        {
+            bossHealthBarRoot.SetActive(false);
+        }
+
         if (parryFlashTimer > 0f && parryFlashImage != null)
         {
             parryFlashTimer -= Time.deltaTime;
@@ -69,130 +174,170 @@ public class UIManager : MonoBehaviour
         instance.parryFlashImage.color = c;
     }
 
-    private void CreateCanvas()
+    public void EnsureCanvasInstance()
     {
-        GameObject canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        Canvas canvas = canvasObject.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        Canvas canvas = FindFirstObjectByType<Canvas>();
 
-        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(800f, 600f);
-        scaler.matchWidthOrHeight = 0.5f;
+        if (canvas == null)
+        {
+            if (uiCanvasPrefab == null)
+            {
+                uiCanvasPrefab = Resources.Load<GameObject>("UI Canvas");
+            }
 
-        CreateHealthBar(canvas.transform);
-        enemyProgressText = CreateText(canvas.transform, "EnemyProgressText", "0 of 0", 24, TextAnchor.UpperRight);
-        SetTopRight(enemyProgressText.rectTransform, new Vector2(-16f, -16f), new Vector2(180f, 36f));
+#if UNITY_EDITOR
+            if (uiCanvasPrefab == null)
+            {
+                uiCanvasPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/UI Canvas.prefab");
+                if (uiCanvasPrefab == null)
+                {
+                    uiCanvasPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI Canvas.prefab");
+                }
+            }
+#endif
 
-        gameOverUI = CreatePanel(canvas.transform, "GameOverPanel", "GAME OVER\nPress SPACE to Retry", new Color(0.18f, 0.02f, 0.02f, 0.86f));
-        levelCompleteUI = CreatePanel(canvas.transform, "LevelCompletePanel", "LEVEL COMPLETE!\nPress SPACE to Continue", new Color(0.02f, 0.16f, 0.04f, 0.86f));
-        gameOverUI.SetActive(false);
-        levelCompleteUI.SetActive(false);
+            if (uiCanvasPrefab != null)
+            {
+                uiCanvasPrefab.transform.localScale = Vector3.one;
+                GameObject canvasObj = Instantiate(uiCanvasPrefab);
+                canvasObj.name = "UI Canvas";
+                canvasObj.transform.localScale = Vector3.one;
+                canvas = canvasObj.GetComponent<Canvas>();
+            }
+            else
+            {
+                Debug.LogWarning("UIManager: UI Canvas prefab could not be loaded from Resources!");
+            }
+        }
 
-        // Full-screen parry vignette overlay (white edges, transparent center)
-        parryFlashImage = CreateFullscreenOverlay(canvas.transform, "ParryFlash", new Color(1f, 1f, 1f, 0f));
-        Shader vignetteShader = Resources.Load<Shader>("UIInvert");
-        if (vignetteShader != null)
-            parryFlashImage.material = new Material(vignetteShader);
+        if (canvas != null)
+        {
+            BindExistingUI(canvas);
+        }
     }
 
-    private void CreateHealthBar(Transform canvas)
+    public void BindExistingUI(Canvas canvas = null)
     {
-        GameObject healthBar = new GameObject("Healthbar", typeof(RectTransform));
-        RectTransform root = healthBar.GetComponent<RectTransform>();
-        root.SetParent(canvas, false);
-        root.anchorMin = new Vector2(0f, 1f);
-        root.anchorMax = new Vector2(0f, 1f);
-        root.pivot = new Vector2(0f, 1f);
-        root.anchoredPosition = new Vector2(16f, -16f);
-        root.sizeDelta = new Vector2(100f, 30f);
+        if (canvas == null)
+        {
+            canvas = FindFirstObjectByType<Canvas>();
+        }
+        if (canvas == null) return;
 
-        CreateImage(root, "Healthbar_Bg", healthBackgroundSprite, new Vector2(78f, 12f));
+        Transform t = canvas.transform;
 
-        playerHealthBar = CreateImage(root, "Healthbar_Fill", healthFillSprite, new Vector2(74f, 8f));
-        playerHealthBar.type = Image.Type.Filled;
-        playerHealthBar.fillMethod = Image.FillMethod.Horizontal;
-        playerHealthBar.fillOrigin = (int)Image.OriginHorizontal.Left;
+        if (playerHealthBar == null)
+        {
+            Transform fillT = FindDeepChild(t, "Healthbar_Fill");
+            if (fillT != null) playerHealthBar = fillT.GetComponent<Image>();
+        }
 
-        CreateImage(root, "Healthbar_Border", healthBorderSprite, new Vector2(87f, 21f));
+        if (playerHealthText == null)
+        {
+            Transform txtT = FindDeepChild(t, "HealthNumberText");
+            if (txtT == null) txtT = FindDeepChild(t, "HealthText");
+            if (txtT != null) playerHealthText = txtT.GetComponent<Text>();
+        }
+
+        if (playerHealthBarRoot == null)
+        {
+            Transform rootT = FindDeepChild(t, "Healthbar");
+            if (rootT != null) playerHealthBarRoot = rootT.gameObject;
+        }
+
+        if (parryCooldownBars == null || parryCooldownBars.Length == 0)
+        {
+            Transform p1 = FindDeepChild(t, "ParryBar_1");
+            if (p1 == null) p1 = FindDeepChild(t, "Stamina_1");
+
+            Transform p2 = FindDeepChild(t, "ParryBar_2");
+            if (p2 == null) p2 = FindDeepChild(t, "Stamina_2");
+
+            Transform p3 = FindDeepChild(t, "ParryBar_3");
+            if (p3 == null) p3 = FindDeepChild(t, "Stamina_3");
+
+            if (p1 != null || p2 != null || p3 != null)
+            {
+                List<Image> list = new List<Image>();
+                if (p1 != null) list.Add(p1.GetComponent<Image>());
+                if (p2 != null) list.Add(p2.GetComponent<Image>());
+                if (p3 != null) list.Add(p3.GetComponent<Image>());
+                parryCooldownBars = list.ToArray();
+            }
+        }
+
+        if (parryCooldownFill == null)
+        {
+            Transform pFill = FindDeepChild(t, "ParryCooldown_Fill");
+            if (pFill != null) parryCooldownFill = pFill.GetComponent<Image>();
+        }
+
+        if (enemyProgressText == null)
+        {
+            Transform textT = FindDeepChild(t, "EnemyProgressText");
+            if (textT != null) enemyProgressText = textT.GetComponent<Text>();
+        }
+
+        if (bossHealthBarRoot == null)
+        {
+            Transform bossT = FindDeepChild(t, "BossHealthBar");
+            if (bossT != null) bossHealthBarRoot = bossT.gameObject;
+        }
+
+        if (bossHealthBarFill == null)
+        {
+            Transform bFillT = FindDeepChild(t, "BossHealth_Fill");
+            if (bFillT != null) bossHealthBarFill = bFillT.GetComponent<Image>();
+        }
+
+        if (bossNameText == null)
+        {
+            Transform bNameT = FindDeepChild(t, "BossName");
+            if (bNameT != null) bossNameText = bNameT.GetComponent<Text>();
+        }
+
+        if (bossHealthValueText == null)
+        {
+            Transform bValT = FindDeepChild(t, "BossHealthValue");
+            if (bValT != null) bossHealthValueText = bValT.GetComponent<Text>();
+        }
+
+        if (gameOverUI == null)
+        {
+            Transform goT = FindDeepChild(t, "GameOverPanel");
+            if (goT != null) gameOverUI = goT.gameObject;
+        }
+
+        if (levelCompleteUI == null)
+        {
+            Transform lcT = FindDeepChild(t, "LevelCompletePanel");
+            if (lcT != null) levelCompleteUI = lcT.gameObject;
+        }
+
+        if (parryFlashImage == null)
+        {
+            Transform pfT = FindDeepChild(t, "ParryFlash");
+            if (pfT != null)
+            {
+                parryFlashImage = pfT.GetComponent<Image>();
+                Shader vignetteShader = Resources.Load<Shader>("UIInvert");
+                if (vignetteShader != null && parryFlashImage != null)
+                {
+                    parryFlashImage.material = new Material(vignetteShader);
+                }
+            }
+        }
     }
 
-    private GameObject CreatePanel(Transform canvas, string panelName, string message, Color color)
+    private Transform FindDeepChild(Transform parent, string childName)
     {
-        GameObject panel = new GameObject(panelName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.SetParent(canvas, false);
-        panelRect.anchorMin = Vector2.zero;
-        panelRect.anchorMax = Vector2.one;
-        panelRect.offsetMin = Vector2.zero;
-        panelRect.offsetMax = Vector2.zero;
-        panel.GetComponent<Image>().color = color;
+        if (parent.name == childName) return parent;
 
-        Text messageText = CreateText(panelRect, panelName + "Text", message, 36, TextAnchor.MiddleCenter);
-        RectTransform textRect = messageText.rectTransform;
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-        messageText.color = Color.white;
-
-        return panel;
-    }
-
-    private Image CreateImage(Transform parent, string imageName, Sprite sprite, Vector2 size)
-    {
-        GameObject imageObject = new GameObject(imageName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        RectTransform rect = imageObject.GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = Vector2.zero;
-        rect.sizeDelta = size;
-
-        Image image = imageObject.GetComponent<Image>();
-        image.sprite = sprite;
-        image.preserveAspect = false;
-        return image;
-    }
-
-    private Text CreateText(Transform parent, string objectName, string content, int fontSize, TextAnchor alignment)
-    {
-        GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-        RectTransform rect = textObject.GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-
-        Text text = textObject.GetComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.text = content;
-        text.fontSize = fontSize;
-        text.alignment = alignment;
-        text.color = Color.white;
-        text.horizontalOverflow = HorizontalWrapMode.Overflow;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
-        return text;
-    }
-
-    private void SetTopRight(RectTransform rect, Vector2 position, Vector2 size)
-    {
-        rect.anchorMin = new Vector2(1f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-    }
-
-    private Image CreateFullscreenOverlay(Transform canvas, string name, Color startColor)
-    {
-        GameObject obj = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        RectTransform rect = obj.GetComponent<RectTransform>();
-        rect.SetParent(canvas, false);
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-        Image img = obj.GetComponent<Image>();
-        img.color = startColor;
-        img.raycastTarget = false;
-        return img;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform result = FindDeepChild(parent.GetChild(i), childName);
+            if (result != null) return result;
+        }
+        return null;
     }
 }

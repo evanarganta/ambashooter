@@ -28,10 +28,8 @@ public class EnemyMushroom : EnemyController
         {
             float distance = Vector2.Distance(transform.position, attackTarget.position);
 
-            // If player is within attack range
             if (distance < attackMinDistance)
             {
-                // Face towards player
                 if (attackTarget.position.x < transform.position.x)
                 {
                     graphic.flipX = true;
@@ -67,7 +65,6 @@ public class EnemyMushroom : EnemyController
         Bullet bullet = bulletObj.GetComponent<Bullet>();
         if (bullet != null)
         {
-            // Shoots towards the player
             bullet.Launch(new Vector2(direction, 0), "Player", bulletSpeed, attack);
         }
 
