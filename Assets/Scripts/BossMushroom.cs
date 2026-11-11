@@ -43,6 +43,7 @@ public class BossMushroom : EnemyController
 
     private Vector3 spawnPosition;
     private static Sprite boxSprite;
+    private readonly List<GameObject> spawnedBossObjects = new List<GameObject>();
 
     protected override void Awake()
     {
@@ -52,6 +53,12 @@ public class BossMushroom : EnemyController
         isContactDamageImmune = true;
     }
 
+    protected override void Die()
+    {
+        CleanupSpawnedObjects();
+        base.Die();
+    }
+
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;
@@ -59,6 +66,19 @@ public class BossMushroom : EnemyController
         {
             AudioManager.Instance.StopMusic();
         }
+        CleanupSpawnedObjects();
+    }
+
+    private void CleanupSpawnedObjects()
+    {
+        for (int i = 0; i < spawnedBossObjects.Count; i++)
+        {
+            if (spawnedBossObjects[i] != null)
+            {
+                Destroy(spawnedBossObjects[i]);
+            }
+        }
+        spawnedBossObjects.Clear();
     }
 
     void Start()
@@ -184,6 +204,7 @@ public class BossMushroom : EnemyController
             float sx = (count > 1) ? (startX + i * step) : 0f;
             float sh = Random.Range(0.85f, 1.15f);
             GameObject spike = new GameObject("Spike");
+            spawnedBossObjects.Add(spike);
 
             float baseHeight;
             if (spikeSprite != null && spikeSprite.bounds.size.y > 0.001f)
@@ -398,6 +419,7 @@ public class BossMushroom : EnemyController
     {
         if (bulletPrefab == null) return;
         GameObject go = Instantiate(bulletPrefab, pos, Quaternion.identity);
+        spawnedBossObjects.Add(go);
         Bullet b = go.GetComponent<Bullet>();
         if (b != null)
         {
@@ -422,6 +444,7 @@ public class BossMushroom : EnemyController
     private GameObject CreateZoneBox(Vector3 center, Vector2 size, Color color, float flashSpeed = 8f)
     {
         GameObject obj = new GameObject("BossZone");
+        spawnedBossObjects.Add(obj);
         obj.transform.position   = center;
         obj.transform.localScale = new Vector3(size.x, size.y, 1f);
 

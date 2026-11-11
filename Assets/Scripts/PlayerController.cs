@@ -85,23 +85,28 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private static PhysicsMaterial2D cachedFrictionlessMat;
+
     private void ApplyFrictionlessMaterial()
     {
-        PhysicsMaterial2D noFrictionMat = new PhysicsMaterial2D("PlayerNoFriction")
+        if (cachedFrictionlessMat == null)
         {
-            friction = 0f,
-            bounciness = 0f
-        };
+            cachedFrictionlessMat = new PhysicsMaterial2D("PlayerNoFriction")
+            {
+                friction = 0f,
+                bounciness = 0f
+            };
+        }
 
         if (rb2 != null)
         {
-            rb2.sharedMaterial = noFrictionMat;
+            rb2.sharedMaterial = cachedFrictionlessMat;
         }
 
         Collider2D col = GetComponent<Collider2D>();
         if (col != null)
         {
-            col.sharedMaterial = noFrictionMat;
+            col.sharedMaterial = cachedFrictionlessMat;
         }
     }
 
@@ -278,6 +283,9 @@ public class PlayerController : MonoBehaviour
         Bullet closestBullet = null;
         float closestDistSq = float.MaxValue;
 
+        Bullet closestFriendly = null;
+        float closestFriendlyDistSq = float.MaxValue;
+
         foreach (Collider2D col in hits)
         {
             if (!col.CompareTag("Bullet"))
@@ -298,11 +306,27 @@ public class PlayerController : MonoBehaviour
             }
 
             float distSq = ((Vector2)col.transform.position - (Vector2)transform.position).sqrMagnitude;
-            if (distSq < closestDistSq)
+            if (bullet.targetTag == "Player")
             {
-                closestDistSq = distSq;
-                closestBullet = bullet;
+                if (distSq < closestDistSq)
+                {
+                    closestDistSq = distSq;
+                    closestBullet = bullet;
+                }
             }
+            else if (bullet.targetTag == "Enemy")
+            {
+                if (distSq < closestFriendlyDistSq)
+                {
+                    closestFriendlyDistSq = distSq;
+                    closestFriendly = bullet;
+                }
+            }
+        }
+
+        if (closestBullet == null)
+        {
+            closestBullet = closestFriendly;
         }
 
         if (closestBullet != null)

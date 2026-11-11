@@ -117,7 +117,7 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    void Die()
+    protected virtual void Die()
     {
         if (isDead)
         {

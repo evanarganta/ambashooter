@@ -180,27 +180,33 @@ public class UIManager : MonoBehaviour
 
         if (canvas == null)
         {
-#if UNITY_EDITOR
-            if (uiCanvasPrefab == null)
-            {
-                uiCanvasPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI Canvas.prefab");
-            }
-#endif
-
             if (uiCanvasPrefab == null)
             {
                 uiCanvasPrefab = Resources.Load<GameObject>("UI Canvas");
             }
 
+#if UNITY_EDITOR
+            if (uiCanvasPrefab == null)
+            {
+                uiCanvasPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/UI Canvas.prefab");
+                if (uiCanvasPrefab == null)
+                {
+                    uiCanvasPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI Canvas.prefab");
+                }
+            }
+#endif
+
             if (uiCanvasPrefab != null)
             {
+                uiCanvasPrefab.transform.localScale = Vector3.one;
                 GameObject canvasObj = Instantiate(uiCanvasPrefab);
                 canvasObj.name = "UI Canvas";
+                canvasObj.transform.localScale = Vector3.one;
                 canvas = canvasObj.GetComponent<Canvas>();
             }
             else
             {
-                Debug.LogWarning("UIManager: UI Canvas prefab could not be loaded from Resources or Assets/Prefabs/UI Canvas.prefab!");
+                Debug.LogWarning("UIManager: UI Canvas prefab could not be loaded from Resources!");
             }
         }
 

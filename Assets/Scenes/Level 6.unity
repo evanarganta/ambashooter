@@ -190,7 +190,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a27e53db1ea64d0db4da6c9bd4bd5f80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
-  uiCanvasPrefab: {fileID: 0}
+  uiCanvasPrefab: {fileID: 1000000000000000, guid: a41147e0974147c1ad26a7deb5d9a40c, type: 3}
   playerHealthBarRoot: {fileID: 0}
   playerHealthBar: {fileID: 0}
   playerHealthText: {fileID: 0}
