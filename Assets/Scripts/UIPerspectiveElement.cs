@@ -19,6 +19,8 @@ public class UIPerspectiveElement : BaseMeshEffect
         }
         if (rootPerspective == null || !rootPerspective.enabled) return;
 
+        if (rootPerspective.excludeText && GetComponent<Text>() != null) return;
+
         RectTransform rootRect = rootPerspective.GetComponent<RectTransform>();
         if (rootRect == null) return;
 
@@ -35,27 +37,21 @@ public class UIPerspectiveElement : BaseMeshEffect
         {
             vh.PopulateUIVertex(ref vert, i);
 
-            // 1. Transform vertex to root Healthbar coordinate space
             Vector3 worldPos = elemTransform.TransformPoint(vert.position);
             Vector3 rootPos = rootTransform.InverseTransformPoint(worldPos);
 
-            // 2. Compute horizontal progress t (0.0 = left edge, 1.0 = right edge)
             float t = Mathf.Clamp01((rootPos.x - rect.xMin) / rect.width);
             float tCurve = Mathf.Pow(t, rootPerspective.perspectivePower);
 
-            // 3. Perspective height foreshortening (tapers towards vanishing point on the right)
             float scaleY = Mathf.Lerp(1.0f, rootPerspective.rightScale, tCurve);
             float centerY = rect.center.y;
             rootPos.y = centerY + (rootPos.y - centerY) * scaleY;
 
-            // 4. Downward vanishing slant
             rootPos.y += tCurve * rootPerspective.ySlant;
 
-            // 5. Forward shear / bevel angle
             float normalizedY = (rootPos.y - rect.yMin) / rect.height;
             rootPos.x += (normalizedY - 0.5f) * rootPerspective.xShear;
 
-            // 6. Transform back into local Graphic vertex space
             worldPos = rootTransform.TransformPoint(rootPos);
             vert.position = elemTransform.InverseTransformPoint(worldPos);
 

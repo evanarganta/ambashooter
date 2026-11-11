@@ -27,7 +27,6 @@ public class BulletRainSpawner : MonoBehaviour
     {
         mainCam = Camera.main;
 
-        // Auto-load EnemyBullet prefab if not assigned
         if (bulletPrefab == null)
         {
             bulletPrefab = Resources.Load<GameObject>("Prefabs/EnemyBullet");
@@ -36,13 +35,11 @@ public class BulletRainSpawner : MonoBehaviour
 
     void Update()
     {
-        // Don't rain if level complete or game over
         if (GameManager.isGameOver || GameManager.isLevelComplete)
         {
             return;
         }
 
-        // Wait until player can move (don't rain during intro cinematic pan)
         if (PlayerController.Instance != null && !PlayerController.Instance.canBeMoved)
         {
             return;
@@ -67,7 +64,6 @@ public class BulletRainSpawner : MonoBehaviour
     {
         if (bulletPrefab == null) return;
 
-        // Calculate Y position above player/camera view
         float targetY = (mainCam != null ? mainCam.transform.position.y : 15f) + spawnHeightAboveCamera;
         targetY = Mathf.Min(targetY, maxCeilingY);
 
@@ -80,7 +76,6 @@ public class BulletRainSpawner : MonoBehaviour
         switch (pattern)
         {
             case 0:
-                // Pattern 0: Chaotic angled rain (showering down across the whole width)
                 posX = Random.Range(minX, maxX);
                 float angleVariance = Random.Range(-25f, 25f);
                 float rad = (-90f + angleVariance) * Mathf.Deg2Rad;
@@ -88,7 +83,6 @@ public class BulletRainSpawner : MonoBehaviour
                 break;
 
             case 1:
-                // Pattern 1: Criss-cross streams (left-angled and right-angled alternating)
                 posX = Random.Range(minX, maxX);
                 bool slantRight = (waveCounter % 2 == 0);
                 float slantAngle = slantRight ? -65f : -115f;
@@ -97,7 +91,6 @@ public class BulletRainSpawner : MonoBehaviour
                 break;
 
             default:
-                // Pattern 2: Cascading curtain sweeping across
                 float t = (waveCounter % 20) / 20f;
                 posX = Mathf.Lerp(minX, maxX, t);
                 direction = Vector2.down;
@@ -112,9 +105,10 @@ public class BulletRainSpawner : MonoBehaviour
         {
             float speed = Random.Range(minSpeed, maxSpeed);
             bullet.Launch(direction, "Player", speed, bulletDamage);
+            bullet.ignoreObstacles = true;
+            bullet.SetDieTime(6f);
         }
 
-        // Play periodic quiet rain whoosh/shoot sound without deafening the player
         if (soundTimer <= 0f && AudioManager.Instance != null)
         {
             soundTimer = 0.35f;

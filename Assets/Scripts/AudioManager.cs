@@ -1,16 +1,12 @@
 using UnityEngine;
 
-/// <summary>
-/// Central audio manager that auto-loads audio clips from Resources/Audio.
-/// Supports 2D stereo/UI sounds as well as spatialized 2D/3D sounds for enemies
-/// with distance falloff, stereo panning (left/right hearing), and volume controls.
-/// </summary>
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
     [Header("Volume Balances")]
     [Range(0f, 1f)] public float masterVolume = 1f;
+    [Range(0f, 1f)] public float musicVolume = 0.7f;
     [Range(0f, 1f)] public float playerVolume = 0.9f;
     [Range(0f, 1f)] public float enemyVolume = 0.6f;
     [Range(0f, 1f)] public float uiVolume = 0.85f;
@@ -23,7 +19,6 @@ public class AudioManager : MonoBehaviour
     [Tooltip("Max stereo pan factor: -1 (full left) to 1 (full right).")]
     public float panStereoFactor = 0.85f;
 
-    // Loaded Audio Clips
     private AudioClip parrySuccessClip;
     private AudioClip parryMissClip;
     private AudioClip playerShootClip;
@@ -35,9 +30,11 @@ public class AudioManager : MonoBehaviour
     private AudioClip enemyDieClip;
     private AudioClip gameOverClip;
     private AudioClip levelCompleteClip;
+    private AudioClip bossEnrageClip;
 
     private AudioSource audioSource2D;
     private AudioSource playerHurtSource;
+    private AudioSource musicSource;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void AutoInitialize()
@@ -63,11 +60,16 @@ public class AudioManager : MonoBehaviour
 
         audioSource2D = gameObject.AddComponent<AudioSource>();
         audioSource2D.playOnAwake = false;
-        audioSource2D.spatialBlend = 0f; // 2D flat sound
+        audioSource2D.spatialBlend = 0f;
 
         playerHurtSource = gameObject.AddComponent<AudioSource>();
         playerHurtSource.playOnAwake = false;
         playerHurtSource.spatialBlend = 0f;
+
+        musicSource = gameObject.AddComponent<AudioSource>();
+        musicSource.playOnAwake = false;
+        musicSource.spatialBlend = 0f;
+        musicSource.loop = true;
 
         LoadClips();
     }
@@ -85,10 +87,8 @@ public class AudioManager : MonoBehaviour
         enemyDieClip      = Resources.Load<AudioClip>("Audio/enemy_die");
         gameOverClip      = Resources.Load<AudioClip>("Audio/game_over");
         levelCompleteClip = Resources.Load<AudioClip>("Audio/level_complete");
+        bossEnrageClip    = Resources.Load<AudioClip>("Audio/Enrage");
     }
-
-    // --- 2D Audio (Player & UI) ---
-
     public void PlayPlayerShoot()
     {
         Play2D(playerShootClip, playerVolume);
@@ -103,7 +103,6 @@ public class AudioManager : MonoBehaviour
     {
         if (playerHurtClip == null || playerHurtSource == null) return;
 
-        // If player hurt sound is already playing, restart it cleanly instead of duplicating/overlapping
         playerHurtSource.clip = playerHurtClip;
         playerHurtSource.volume = playerVolume * masterVolume;
         playerHurtSource.Stop();
@@ -114,7 +113,7 @@ public class AudioManager : MonoBehaviour
     {
         if (playerHurtSource != null)
         {
-            playerHurtSource.Stop(); // Cut off hurt sound if player dies
+            playerHurtSource.Stop();
         }
         Play2D(playerDieClip, playerVolume);
     }
@@ -131,12 +130,40 @@ public class AudioManager : MonoBehaviour
 
     public void PlayGameOver()
     {
+        StopMusic();
         Play2D(gameOverClip, uiVolume);
     }
 
     public void PlayLevelComplete()
     {
+        StopMusic();
         Play2D(levelCompleteClip, uiVolume);
+    }
+
+    public void PlayBossEnrage(AudioClip customClip = null)
+    {
+        AudioClip clipToPlay = customClip != null ? customClip : bossEnrageClip;
+        if (clipToPlay == null) clipToPlay = Resources.Load<AudioClip>("Audio/Enrage");
+        Play2D(clipToPlay, 1.0f);
+    }
+
+    public void PlayMusic(AudioClip clip, bool loop = true)
+    {
+        if (clip == null || musicSource == null) return;
+        if (musicSource.clip == clip && musicSource.isPlaying) return;
+
+        musicSource.clip = clip;
+        musicSource.loop = loop;
+        musicSource.volume = musicVolume * masterVolume;
+        musicSource.Play();
+    }
+
+    public void StopMusic()
+    {
+        if (musicSource != null && musicSource.isPlaying)
+        {
+            musicSource.Stop();
+        }
     }
 
     private void Play2D(AudioClip clip, float volumeScale)
@@ -144,8 +171,6 @@ public class AudioManager : MonoBehaviour
         if (clip == null) return;
         audioSource2D.PlayOneShot(clip, volumeScale * masterVolume);
     }
-
-    // --- Spatialized Audio (Enemies: Left/Right stereo panning & distance) ---
 
     public void PlayEnemyShoot(Vector3 worldPos)
     {
@@ -166,7 +191,6 @@ public class AudioManager : MonoBehaviour
     {
         if (clip == null) return;
 
-        // Calculate distance and horizontal pan relative to Player position (true 2D hearing)
         float distance = 0f;
         float pan = 0f;
 
@@ -177,25 +201,21 @@ public class AudioManager : MonoBehaviour
             Vector2 sourcePos2D = worldPos;
             distance = Vector2.Distance(playerPos2D, sourcePos2D);
 
-            // Left/Right panning based on horizontal offset from player (-1 = left, +1 = right)
             float dx = sourcePos2D.x - playerPos2D.x;
             pan = Mathf.Clamp(dx / Mathf.Max(1f, soundMaxDistance * 0.5f), -1f, 1f) * panStereoFactor;
         }
 
-        // Distance attenuation: sound is louder the closer the player is to the source
         float distanceFactor = 1f;
         if (distance > soundMinDistance)
         {
             float t = (distance - soundMinDistance) / Mathf.Max(0.001f, soundMaxDistance - soundMinDistance);
             distanceFactor = Mathf.Clamp01(1f - t);
-            // Logarithmic/quad falloff for natural hearing
             distanceFactor = distanceFactor * distanceFactor;
         }
 
         float finalVolume = volumeScale * masterVolume * distanceFactor;
-        if (finalVolume <= 0.001f) return; // Too far to hear
+        if (finalVolume <= 0.001f) return;
 
-        // Create independent temporary AudioSource so multiple identical SFX freely overlap
         GameObject tempAudio = new GameObject("TempAudio_" + clip.name);
         worldPos.z = 0f;
         tempAudio.transform.position = worldPos;
@@ -203,8 +223,8 @@ public class AudioManager : MonoBehaviour
         AudioSource source = tempAudio.AddComponent<AudioSource>();
         source.clip = clip;
         source.volume = finalVolume;
-        source.panStereo = pan; // Crisp Left/Right separation
-        source.spatialBlend = 0f; // Handled directly in 2D space for exact distance/pan control
+        source.panStereo = pan;
+        source.spatialBlend = 0f;
         source.playOnAwake = false;
 
         source.Play();

@@ -4,14 +4,21 @@ public class Bullet : MonoBehaviour
 {
     [SerializeField] private float speed = 10f;
     [SerializeField] private float damage = 2f;
-    [SerializeField] private float dieTime = 3f; // Despawns after 3 seconds if it doesn't hit anything
+    [SerializeField] private float dieTime = 3f;
 
     public string targetTag = "Enemy";
+    public bool ignoreObstacles = false;
+
+    [Header("Boss Bullet Features")]
+    public bool isBossBullet = false;
+    public float bossReflectDamage = 25f;
+    public float bossParryHeal = 30f;
 
     private Vector2 direction;
     private Rigidbody2D rb2;
     private Collider2D bulletCollider;
     private bool hasHit;
+    private Transform homingTarget;
 
     void Awake()
     {
@@ -30,6 +37,12 @@ public class Bullet : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (homingTarget != null)
+        {
+            Vector2 toTarget = ((Vector2)homingTarget.position - rb2.position).normalized;
+            direction = Vector2.Lerp(direction, toTarget, 14f * Time.fixedDeltaTime).normalized;
+        }
+
         Vector2 normalizedDirection = direction.normalized;
         if (normalizedDirection == Vector2.zero)
         {
@@ -54,15 +67,17 @@ public class Bullet : MonoBehaviour
             return;
         }
 
-        // Stop and destroy on hitting walls/ground
-        int obstacleLayer = LayerMask.GetMask("Obstacle");
-        RaycastHit2D wallHit = Physics2D.CircleCast(rb2.position, radius, normalizedDirection, distance, obstacleLayer);
-        if (wallHit.collider != null)
+        if (!ignoreObstacles)
         {
-            hasHit = true;
-            bulletCollider.enabled = false;
-            Destroy(gameObject);
-            return;
+            int obstacleLayer = LayerMask.GetMask("Obstacle");
+            RaycastHit2D wallHit = Physics2D.CircleCast(rb2.position, radius, normalizedDirection, distance, obstacleLayer);
+            if (wallHit.collider != null)
+            {
+                hasHit = true;
+                bulletCollider.enabled = false;
+                Destroy(gameObject);
+                return;
+            }
         }
 
         rb2.MovePosition(rb2.position + normalizedDirection * distance);
@@ -93,12 +108,8 @@ public class Bullet : MonoBehaviour
                 return;
             }
 
-            // Normal bullet damage is ALWAYS dealt
             player.DamagedBy(damage);
 
-            // Check if player specifically stomped on the bullet from above:
-            // 1) Player must be falling downwards (linearVelocity.y < -0.1f)
-            // 2) Player's center must be strictly above the bullet
             Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
             CapsuleCollider2D playerCol = player.GetComponent<CapsuleCollider2D>();
             float playerBottom = playerCol != null ? playerCol.bounds.min.y : player.transform.position.y;
@@ -107,7 +118,6 @@ public class Bullet : MonoBehaviour
 
             if (isJumpingOnBullet)
             {
-                // Stomping also launches player upward with a bounce
                 player.Bounce();
             }
         }
@@ -134,7 +144,11 @@ public class Bullet : MonoBehaviour
         return damage;
     }
 
-    // Called by the player parry — launches or reflects in specified direction, retargets, and boosts speed/damage
+    public void SetDieTime(float t)
+    {
+        dieTime = t;
+    }
+
     public void ParryBoost(Vector2 newDirection, string newTargetTag, float speedMultiplier = 1f, float damageBonus = 1.5f)
     {
         if (hasHit) return;
@@ -142,8 +156,59 @@ public class Bullet : MonoBehaviour
         targetTag = newTargetTag;
         speed *= speedMultiplier;
         damage *= damageBonus;
-        // Reset lifespan so boosted bullet has full travel time
         dieTime = 3f;
+    }
+
+    public void LaunchBossBullet(Vector2 direction, float speed, float damage)
+    {
+        isBossBullet = true;
+        ignoreObstacles = true;
+        this.direction = direction;
+        this.speed = speed;
+        this.damage = damage;
+        this.targetTag = "Player";
+
+        transform.localScale = Vector3.one * 2.0f;
+
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.color = new Color(1f, 0.28f, 0.4f, 1f);
+        }
+
+        if (bulletCollider is CircleCollider2D circle)
+        {
+            circle.radius *= 1.35f;
+        }
+    }
+
+    public void ReflectBossBullet()
+    {
+        if (hasHit) return;
+
+        isBossBullet = true;
+        ignoreObstacles = true;
+        targetTag = "Enemy";
+        damage = bossReflectDamage;
+        speed = Mathf.Max(speed * 1.6f, 12f);
+        dieTime = 4f;
+
+        if (BossMushroom.Instance != null && !BossMushroom.Instance.isDead)
+        {
+            homingTarget = BossMushroom.Instance.transform;
+            direction = ((Vector2)BossMushroom.Instance.transform.position - rb2.position).normalized;
+        }
+        else
+        {
+            direction = -direction;
+        }
+
+        transform.localScale = Vector3.one * 2.5f;
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.color = new Color(0f, 1f, 1f, 1f);
+        }
     }
 
     public void Reflect(string newTargetTag, float speedMultiplier = 1f)
@@ -152,7 +217,6 @@ public class Bullet : MonoBehaviour
         direction = -direction;
         targetTag = newTargetTag;
         speed *= speedMultiplier;
-        // Reset lifespan so reflected bullet has full travel time
         dieTime = 3f;
     }
 }

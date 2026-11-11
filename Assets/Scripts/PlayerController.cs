@@ -77,8 +77,12 @@ public class PlayerController : MonoBehaviour
 
         healthMax = health;
 
-        // Ensure frictionless physics so player never sticks or freezes on walls during freefall
         ApplyFrictionlessMaterial();
+
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Level 6" || FindObjectOfType<BossMushroom>() != null)
+        {
+            SetInvulnerable(5f);
+        }
     }
 
     private void ApplyFrictionlessMaterial()
@@ -150,7 +154,6 @@ public class PlayerController : MonoBehaviour
         Vector2 velocity = rb2.linearVelocity;
         if (x != 0f)
         {
-            // If in freefall/air and pushing directly into a wall, prevent pushing into the wall to avoid sticking/freezing
             if (!isGrounded && IsPushingAgainstWall(x))
             {
                 velocity.x = 0f;
@@ -182,7 +185,6 @@ public class PlayerController : MonoBehaviour
         float checkDistance = 0.35f;
         int obstacleMask = LayerMask.GetMask("Obstacle");
 
-        // Check horizontal contact at upper and lower body
         Vector2 upperOrigin = (Vector2)transform.position + Vector2.up * 0.25f;
         Vector2 lowerOrigin = (Vector2)transform.position + Vector2.down * 0.15f;
 
@@ -199,7 +201,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Cast a ray downward to check for ground
         RaycastHit2D ray = Physics2D.Raycast(transform.position, Vector2.down, 10f, LayerMask.GetMask("Obstacle"));
 
         if (ray.collider != null && ray.distance < minGroundDistance)
@@ -211,7 +212,6 @@ public class PlayerController : MonoBehaviour
             isGrounded = false;
         }
 
-        // Jump when Up Arrow, W, or Spacebar is pressed
         if ((Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space)) && isGrounded)
         {
             Jump();
@@ -220,7 +220,6 @@ public class PlayerController : MonoBehaviour
 
     void Jump()
     {
-        // Reset vertical velocity before jumping for consistent jump height
         rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0);
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         if (AudioManager.Instance != null)
@@ -271,11 +270,14 @@ public class PlayerController : MonoBehaviour
 
         parryTimer = parryCooldown;
 
-        // Determine which horizontal side the player is facing
         float facingSign = (graphic != null && graphic.flipX) ? -1f : 1f;
 
         bool parried = false;
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, parryRadius);
+
+        Bullet closestBullet = null;
+        float closestDistSq = float.MaxValue;
+
         foreach (Collider2D col in hits)
         {
             if (!col.CompareTag("Bullet"))
@@ -289,27 +291,40 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            // Only parry bullets that are on the side the player is facing
             float bulletSide = col.transform.position.x - transform.position.x;
             if (bulletSide * facingSign < 0f)
             {
                 continue;
             }
 
-            if (bullet.targetTag == "Player")
+            float distSq = ((Vector2)col.transform.position - (Vector2)transform.position).sqrMagnitude;
+            if (distSq < closestDistSq)
             {
-                // Enemy bullet incoming -> Reflect back towards enemies
-                // Heal by half the incoming bullet damage that player avoided taking
-                Heal(bullet.GetDamage() * 0.5f);
+                closestDistSq = distSq;
+                closestBullet = bullet;
+            }
+        }
 
-                bullet.Reflect("Enemy", parrySpeedMultiplier);
+        if (closestBullet != null)
+        {
+            if (closestBullet.targetTag == "Player")
+            {
+                if (closestBullet.isBossBullet)
+                {
+                    Heal(closestBullet.bossParryHeal);
+                    closestBullet.ReflectBossBullet();
+                }
+                else
+                {
+                    Heal(Mathf.Max(closestBullet.GetDamage() * 2f, 10f));
+                    closestBullet.Reflect("Enemy", parrySpeedMultiplier);
+                }
                 parried = true;
             }
-            else if (bullet.targetTag == "Enemy")
+            else if (closestBullet.targetTag == "Enemy")
             {
-                // Player's own bullet -> Boost forward in the facing direction with speed + damage multiplier
                 Vector2 boostDir = new Vector2(facingSign, 0f);
-                bullet.ParryBoost(boostDir, "Enemy", parrySpeedMultiplier, 1.5f);
+                closestBullet.ParryBoost(boostDir, "Enemy", parrySpeedMultiplier, 1.5f);
                 parried = true;
             }
         }
@@ -341,13 +356,11 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator ParryVisual()
     {
-        // Fire animator trigger so any Parry state in the Animator can play
         if (animator != null && HasAnimatorParam(animator, "parry", AnimatorControllerParameterType.Trigger))
         {
             animator.SetTrigger("parry");
         }
 
-        // Swap to parry sprite, temporarily pausing the animator so it doesn't override
         if (graphic != null && parrySprite != null)
         {
             Sprite original = graphic.sprite;
@@ -396,7 +409,6 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Reset vertical velocity for consistent bounce height, keep horizontal momentum
         rb2.linearVelocity = new Vector2(rb2.linearVelocity.x, 0f);
         rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         if (AudioManager.Instance != null)
@@ -409,6 +421,11 @@ public class PlayerController : MonoBehaviour
     {
         if (isDead || amount <= 0f) return;
         health = Mathf.Min(healthMax, health + amount);
+    }
+
+    public void SetInvulnerable(float duration)
+    {
+        invulnerabilityTimer = Mathf.Max(invulnerabilityTimer, duration);
     }
 
     public void DamagedBy(float damage)
@@ -501,12 +518,10 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // Determine if player stepped on the enemy from above
         bool isSteppedOn = false;
         for (int i = 0; i < collision.contactCount; i++)
         {
             ContactPoint2D contact = collision.GetContact(i);
-            // Normal points from enemy towards player
             if (contact.normal.y > 0.5f)
             {
                 isSteppedOn = true;
@@ -519,11 +534,9 @@ public class PlayerController : MonoBehaviour
             isSteppedOn = true;
         }
 
-        // Damage from touching
         if (invulnerabilityTimer <= 0f)
         {
             float playerDamageToTake = enemy.GetAttackDamage();
-            // Jump bump / head stomp takes half damage (unless enemy is contact damage immune)
             if (isSteppedOn && !enemy.isContactDamageImmune)
             {
                 playerDamageToTake *= 0.5f;
@@ -531,7 +544,6 @@ public class PlayerController : MonoBehaviour
 
             DamagedBy(playerDamageToTake);
 
-            // Only damage enemy if it is not contact damage immune
             if (!enemy.isContactDamageImmune)
             {
                 float enemyDamageToTake = contactDamage > 0f ? contactDamage : attack;
@@ -539,10 +551,8 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Physical reaction
         if (enemy.isContactDamageImmune)
         {
-            // Boss / immune enemy is completely unbudged; player is knocked back away
             if (!isDead)
             {
                 float pushDirX = transform.position.x < enemy.transform.position.x ? -1f : 1f;
@@ -557,7 +567,6 @@ public class PlayerController : MonoBehaviour
         }
         else if (isSteppedOn)
         {
-            // Stepped on: player automatically jumps again
             if (!isDead)
             {
                 Bounce();
@@ -565,7 +574,6 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // Bumped: both player and mushroom get pushed back away from each other
             if (!isDead)
             {
                 float pushDirX = transform.position.x < enemy.transform.position.x ? -1f : 1f;

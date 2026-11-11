@@ -15,9 +15,9 @@ public class UIManager : MonoBehaviour
     [Header("Parry Cooldown UI")]
     [SerializeField] public Image[] parryCooldownBars;
     [SerializeField] public Image parryCooldownFill;
-    [SerializeField] public Color parryReadyColor = new Color(0f, 0.95f, 1f, 1f); // Neon Cyan
-    [SerializeField] public Color parryRechargeColor = new Color(0.08f, 0.55f, 0.65f, 0.85f); // Dim Cyan
-    [SerializeField] public Color parryEmptyColor = new Color(0.04f, 0.12f, 0.16f, 0.55f); // Dark Charcoal/Slate
+    [SerializeField] public Color parryReadyColor = new Color(0f, 0.95f, 1f, 1f);
+    [SerializeField] public Color parryRechargeColor = new Color(0.08f, 0.55f, 0.65f, 0.85f);
+    [SerializeField] public Color parryEmptyColor = new Color(0.04f, 0.12f, 0.16f, 0.55f);
 
     [Header("Enemy Progress Counter")]
     [SerializeField] public Text enemyProgressText;
@@ -50,10 +50,8 @@ public class UIManager : MonoBehaviour
     {
         player = FindAnyObjectByType<PlayerController>();
 
-        // Ensure canvas instance exists and bind all elements from prefab
         EnsureCanvasInstance();
 
-        // Initialize state
         if (gameOverUI != null) gameOverUI.SetActive(false);
         if (levelCompleteUI != null) levelCompleteUI.SetActive(false);
         if (bossHealthBarRoot != null) bossHealthBarRoot.SetActive(false);
@@ -66,7 +64,6 @@ public class UIManager : MonoBehaviour
             player = FindAnyObjectByType<PlayerController>();
         }
 
-        // 1. Player Health Bar & Numeric Display
         if (player != null && player.healthMax > 0f)
         {
             if (playerHealthBar != null)
@@ -79,7 +76,6 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // 2. Parry Cooldown Bars
         if (player != null)
         {
             float pProgress = player.ParryCooldownProgress;
@@ -122,25 +118,21 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        // 3. Enemy Progress
         if (enemyProgressText != null)
         {
             enemyProgressText.text = $"{ScoreManager.currentEnemyProgress} of {ScoreManager.targetEnemyProgress}";
         }
 
-        // 4. Game Over Panel
         if (gameOverUI != null)
         {
             gameOverUI.SetActive(GameManager.isGameOver);
         }
 
-        // 5. Level Complete Panel
         if (levelCompleteUI != null)
         {
             levelCompleteUI.SetActive(!GameManager.isGameOver && GameManager.isLevelComplete);
         }
 
-        // 6. Boss Health Bar
         BossMushroom boss = BossMushroom.Instance;
         if (boss != null && !boss.isDead && bossHealthBarRoot != null)
         {
@@ -149,9 +141,9 @@ public class UIManager : MonoBehaviour
             {
                 bossHealthBarFill.fillAmount = Mathf.Clamp01(boss.health / boss.maxHealth);
             }
-            if (bossHealthValueText != null)
+            if (bossHealthValueText != null && bossHealthValueText.gameObject.activeSelf)
             {
-                bossHealthValueText.text = $"{Mathf.CeilToInt(boss.health)} / {Mathf.CeilToInt(boss.maxHealth)}";
+                bossHealthValueText.gameObject.SetActive(false);
             }
             if (bossNameText != null)
             {
@@ -163,7 +155,6 @@ public class UIManager : MonoBehaviour
             bossHealthBarRoot.SetActive(false);
         }
 
-        // 7. Fade out parry vignette
         if (parryFlashTimer > 0f && parryFlashImage != null)
         {
             parryFlashTimer -= Time.deltaTime;
@@ -183,9 +174,6 @@ public class UIManager : MonoBehaviour
         instance.parryFlashImage.color = c;
     }
 
-    /// <summary>
-    /// Ensures a Canvas exists in the scene. If none is found, instantiates the UI Canvas prefab.
-    /// </summary>
     public void EnsureCanvasInstance()
     {
         Canvas canvas = FindFirstObjectByType<Canvas>();
@@ -195,12 +183,10 @@ public class UIManager : MonoBehaviour
 #if UNITY_EDITOR
             if (uiCanvasPrefab == null)
             {
-                // In Unity Editor, always load the exact prefab asset being edited
                 uiCanvasPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI Canvas.prefab");
             }
 #endif
 
-            // Fallback for standalone build if assigned or in Resources
             if (uiCanvasPrefab == null)
             {
                 uiCanvasPrefab = Resources.Load<GameObject>("UI Canvas");
@@ -224,9 +210,6 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Searches the Canvas for UI objects so you can easily modify everything on the prefab!
-    /// </summary>
     public void BindExistingUI(Canvas canvas = null)
     {
         if (canvas == null)
@@ -256,7 +239,6 @@ public class UIManager : MonoBehaviour
             if (rootT != null) playerHealthBarRoot = rootT.gameObject;
         }
 
-        // Bind Parry Cooldown bars (ParryBar_1, ParryBar_2, ParryBar_3 or Stamina_1, 2, 3)
         if (parryCooldownBars == null || parryCooldownBars.Length == 0)
         {
             Transform p1 = FindDeepChild(t, "ParryBar_1");

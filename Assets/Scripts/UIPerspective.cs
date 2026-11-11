@@ -22,35 +22,76 @@ public class UIPerspective : MonoBehaviour
     [Range(0.6f, 2.0f)]
     public float perspectivePower = 1.039f;
 
+    [Header("Exclusions")]
+    [Tooltip("If true, Text graphics under this container will NOT be perspective-warped")]
+    public bool excludeText = false;
+
     void OnEnable()
     {
-        RefreshChildren();
+        if (Application.isPlaying)
+        {
+            RefreshChildren();
+        }
+        else
+        {
+            NotifyDirty();
+        }
     }
 
     void OnValidate()
     {
-        RefreshChildren();
+        NotifyDirty();
     }
 
     void Start()
     {
-        RefreshChildren();
+        if (Application.isPlaying)
+        {
+            RefreshChildren();
+        }
+    }
+
+    public void NotifyDirty()
+    {
+        Graphic[] graphics = GetComponentsInChildren<Graphic>(true);
+        foreach (Graphic g in graphics)
+        {
+            if (g != null) g.SetVerticesDirty();
+        }
     }
 
     [ContextMenu("Refresh Children")]
     public void RefreshChildren()
     {
+        if (!Application.isPlaying) return;
+
         Graphic[] graphics = GetComponentsInChildren<Graphic>(true);
         foreach (Graphic g in graphics)
         {
             if (g == null) continue;
+
+            if (excludeText && g is Text)
+            {
+                UIPerspectiveElement existing = g.GetComponent<UIPerspectiveElement>();
+                if (existing != null)
+                {
+                    existing.enabled = false;
+                    Destroy(existing);
+                }
+                g.SetVerticesDirty();
+                continue;
+            }
 
             UIPerspectiveElement elem = g.GetComponent<UIPerspectiveElement>();
             if (elem == null)
             {
                 elem = g.gameObject.AddComponent<UIPerspectiveElement>();
             }
-            elem.rootPerspective = this;
+            if (elem != null)
+            {
+                elem.enabled = true;
+                elem.rootPerspective = this;
+            }
             g.SetVerticesDirty();
         }
     }

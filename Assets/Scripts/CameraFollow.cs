@@ -10,7 +10,7 @@ public class CameraFollow : MonoBehaviour
     [Tooltip("Target orthographic size for 2D camera zoom (smaller value = closer/zoomed in). Default was 5.")]
     [SerializeField] private float orthographicSize = 4f;
 
-    [Range(0f, 1.0f)] public float followRatio = 1f; // Smaller = smoother, 1.0 = instant
+    [Range(0f, 1.0f)] public float followRatio = 1f;
 
     [Header("Intro Pan")]
     public bool enableIntroPan = false;
@@ -29,7 +29,6 @@ public class CameraFollow : MonoBehaviour
             cam.orthographicSize = orthographicSize;
         }
 
-        // Ensure AudioListener is attached to the camera so spatial sound pans left/right accurately
         if (GetComponent<AudioListener>() == null)
         {
             gameObject.AddComponent<AudioListener>();
@@ -43,7 +42,6 @@ public class CameraFollow : MonoBehaviour
             target = PlayerController.Instance.transform;
         }
 
-        // Auto-detect boss in boss levels
         if (introStartTarget == null)
         {
             BossMushroom boss = FindAnyObjectByType<BossMushroom>();
@@ -71,21 +69,18 @@ public class CameraFollow : MonoBehaviour
             cam.orthographicSize = introBossZoom;
         }
 
-        // Position camera right on the boss above
         Vector3 bossCamPos = introStartTarget.position + targetOffset;
         bossCamPos.z = -10f;
         transform.position = bossCamPos;
 
-        // Freeze player movement during intro pan
         if (PlayerController.Instance != null)
         {
             PlayerController.Instance.canBeMoved = false;
+            PlayerController.Instance.SetInvulnerable(introHoldTime + introPanDuration + 1f);
         }
 
-        // Hold view on the boss
         yield return new WaitForSeconds(introHoldTime);
 
-        // Smoothly pan down to player while zooming back to standard player zoom (orthographicSize = 4)
         float elapsed = 0f;
         Vector3 startPos = transform.position;
         float startZoom = cam != null ? cam.orthographicSize : introBossZoom;
@@ -102,6 +97,11 @@ public class CameraFollow : MonoBehaviour
                 target = PlayerController.Instance.transform;
             }
 
+            if (PlayerController.Instance != null)
+            {
+                PlayerController.Instance.SetInvulnerable(1.5f);
+            }
+
             Vector3 destination = target != null ? (target.position + targetOffset) : transform.position;
             destination.z = -10f;
 
@@ -115,7 +115,6 @@ public class CameraFollow : MonoBehaviour
             yield return null;
         }
 
-        // Snap precisely to target at end of pan
         if (target != null)
         {
             Vector3 finalPos = target.position + targetOffset;
@@ -128,13 +127,12 @@ public class CameraFollow : MonoBehaviour
             cam.orthographicSize = targetZoom;
         }
 
-        // Restore instant follow speed like the other levels
         followRatio = 1f;
 
-        // Restore player control & normal follow
         if (PlayerController.Instance != null)
         {
             PlayerController.Instance.canBeMoved = true;
+            PlayerController.Instance.SetInvulnerable(1f);
         }
 
         isIntroPanning = false;
@@ -149,9 +147,8 @@ public class CameraFollow : MonoBehaviour
         {
             Vector3 targetPos = target.position + targetOffset;
 
-            // Smoothly interpolate camera position towards target position
             Vector3 newPos = Vector3.Lerp(transform.position, targetPos, followRatio);
-            newPos.z = -10f; // Keep camera at standard 2D depth
+            newPos.z = -10f;
 
             transform.position = newPos;
         }

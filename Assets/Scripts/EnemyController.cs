@@ -65,7 +65,6 @@ public class EnemyController : MonoBehaviour
 
     protected virtual void Movement()
     {
-        // To be overriden
     }
 
     public virtual void ApplyKnockback(Vector2 direction, float force)
