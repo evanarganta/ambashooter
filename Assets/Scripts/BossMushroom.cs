@@ -257,9 +257,20 @@ public class BossMushroom : EnemyController
                 bool inZone = py < arenaFloorSurfaceY + 1.3f && px < arenaHalfWidth;
 
                 if (inZone && !wasInZone)
-                    attackTarget.GetComponent<PlayerController>()?.DamagedBy(onEnterDamage);
-
-                wasInZone = inZone;
+                {
+                    PlayerController pc = attackTarget.GetComponent<PlayerController>();
+                    if (pc != null)
+                    {
+                        float healthBefore = pc.health;
+                        pc.DamagedBy(onEnterDamage);
+                        if (pc.health < healthBefore)
+                            wasInZone = true;
+                    }
+                }
+                else if (!inZone)
+                {
+                    wasInZone = false;
+                }
             }
 
             elapsed += tickInterval;

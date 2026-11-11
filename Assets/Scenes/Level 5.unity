@@ -189,6 +189,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a27e53db1ea64d0db4da6c9bd4bd5f80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
+  uiCanvasPrefab: {fileID: 1000000000000000, guid: a41147e0974147c1ad26a7deb5d9a40c, type: 3}
   healthFillSprite: {fileID: 5990405537963813743, guid: d6a1e67a48a7e324ca417fc8cfa6a117, type: 3}
   healthBackgroundSprite: {fileID: 6157292665427411367, guid: 7f21272175b813249ad88d8be57dfa01, type: 3}
   healthBorderSprite: {fileID: 5304562571587492340, guid: 58f4c627090bff6438f964477b1dd8fc, type: 3}
