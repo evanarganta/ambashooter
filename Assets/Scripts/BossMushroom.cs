@@ -254,7 +254,7 @@ public class BossMushroom : EnemyController
             {
                 float py    = attackTarget.position.y;
                 float px    = Mathf.Abs(attackTarget.position.x);
-                bool inZone = py < arenaFloorSurfaceY + 1.3f && px < arenaHalfWidth;
+                bool inZone = py >= arenaFloorSurfaceY - 0.5f && py < arenaFloorSurfaceY + 1.3f && px < arenaHalfWidth;
 
                 if (inZone && !wasInZone)
                 {
