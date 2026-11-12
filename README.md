@@ -1,5 +1,6 @@
-**Ambashooter...**
-...is a fast-paced, retro 2D platformer shooter and bullet-hell boss battler built in Unity. Blast your way through fungal swarms, master high-stakes bullet parrying, and take down the colossal Amba Haikal!
+**Ambashooter** is a fast-paced, retro 2D platformer shooter and bullet-hell boss battler built in Unity. Blast your way through fungal swarms, master high-stakes bullet parrying, and take down the colossal Amba Haikal!
+
+----
 
 **Controls:**
 
@@ -15,6 +16,8 @@
 - Time your parry right as incoming projectiles approach to reflect them back at enemies
 - Parry your own shots to accelerate them into high-speed powered-up projectiles
 - Do keep an eye on your parry cooldown bars in the HUD
+
+-----
 
 **Presented by Kelompok 3 of XI RPL 1:**
 
